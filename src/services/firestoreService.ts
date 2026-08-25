@@ -38,10 +38,13 @@ function getRandomMedicalColor(): string {
 export const FirestoreService = {
   // Get all patients
   async getAllPatients(): Promise<Patient[]> {
+    if (!db) {
+      throw new Error('Firestore is not initialized');
+    }
     try {
       const patientsRef = collection(db, PATIENTS_COLLECTION);
       const snapshot = await getDocs(patientsRef);
-      return snapshot.docs.map(convertDocToPatient);
+      return snapshot.docs.map(convertDocToPatient).filter((p): p is Patient => p !== null);
     } catch (error) {
       console.error('Error fetching patients:', error);
       throw new Error('Failed to fetch patients from Firestore', { cause: error });
@@ -50,13 +53,17 @@ export const FirestoreService = {
 
   // Get patient by ID
   async getPatientById(id: string): Promise<Patient | undefined> {
+    if (!db) {
+      throw new Error('Firestore is not initialized');
+    }
     try {
       const docRef = doc(db, PATIENTS_COLLECTION, id);
       const snapshot = await getDoc(docRef);
       if (!snapshot.exists()) {
         return undefined;
       }
-      return convertDocToPatient(snapshot);
+      const patient = convertDocToPatient(snapshot);
+      return patient || undefined;
     } catch (error) {
       console.error('Error fetching patient:', error);
       throw new Error('Failed to fetch patient from Firestore', { cause: error });
@@ -65,6 +72,9 @@ export const FirestoreService = {
 
   // Create new patient
   async createPatient(patientData: PatientFormData): Promise<Patient> {
+    if (!db) {
+      throw new Error('Firestore is not initialized');
+    }
     try {
       const patientsRef = collection(db, PATIENTS_COLLECTION);
       
@@ -93,6 +103,9 @@ export const FirestoreService = {
 
   // Update patient
   async updatePatient(id: string, updates: Partial<PatientFormData>): Promise<Patient> {
+    if (!db) {
+      throw new Error('Firestore is not initialized');
+    }
     try {
       const docRef = doc(db, PATIENTS_COLLECTION, id);
       const updateData = {
@@ -116,6 +129,9 @@ export const FirestoreService = {
 
   // Delete patient
   async deletePatient(id: string): Promise<boolean> {
+    if (!db) {
+      throw new Error('Firestore is not initialized');
+    }
     try {
       const docRef = doc(db, PATIENTS_COLLECTION, id);
       await deleteDoc(docRef);
@@ -135,6 +151,9 @@ export const FirestoreService = {
     page: number;
     pageSize: number;
   }) {
+    if (!db) {
+      throw new Error('Firestore is not initialized');
+    }
     try {
       const patientsRef = collection(db, PATIENTS_COLLECTION);
       
@@ -205,6 +224,9 @@ export const FirestoreService = {
 
   // Batch migration: migrate existing patients to Firestore
   async migratePatients(patients: Patient[]) {
+    if (!db) {
+      throw new Error('Firestore is not initialized');
+    }
     try {
       const patientsRef = collection(db, PATIENTS_COLLECTION);
       const batch = patients.map(async (patient) => {
