@@ -10,6 +10,7 @@ import {
   where,
   orderBy,
   QueryDocumentSnapshot,
+  DocumentSnapshot,
   type DocumentData,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -18,8 +19,10 @@ import type { Patient, PatientFormData } from '../types/patient';
 const PATIENTS_COLLECTION = 'patients';
 
 // Helper function to convert Firestore document to Patient object
-function convertDocToPatient(doc: QueryDocumentSnapshot<DocumentData>): Patient {
+function convertDocToPatient(doc: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>): Patient | null {
+  if (!doc.exists()) return null;
   const data = doc.data();
+  if (!data) return null;
   return {
     id: doc.id,
     ...data,
@@ -100,7 +103,11 @@ export const FirestoreService = {
       
       // Return updated patient
       const updatedSnapshot = await getDoc(docRef);
-      return convertDocToPatient(updatedSnapshot);
+      const patient = convertDocToPatient(updatedSnapshot);
+      if (!patient) {
+        throw new Error('Failed to retrieve updated patient');
+      }
+      return patient;
     } catch (error) {
       console.error('Error updating patient:', error);
       throw new Error('Failed to update patient in Firestore', { cause: error });
@@ -129,7 +136,7 @@ export const FirestoreService = {
     pageSize: number;
   }) {
     try {
-      let q = collection(db, PATIENTS_COLLECTION);
+      const patientsRef = collection(db, PATIENTS_COLLECTION);
       
       // Build query
       const constraints = [];
@@ -144,12 +151,10 @@ export const FirestoreService = {
       constraints.push(orderBy(options.sortBy, sortDirection));
       
       // Apply constraints
-      if (constraints.length > 0) {
-        q = query(q, ...constraints);
-      }
+      const q = constraints.length > 0 ? query(patientsRef, ...constraints) : patientsRef;
       
       const snapshot = await getDocs(q);
-      let patients = snapshot.docs.map(convertDocToPatient);
+      let patients = snapshot.docs.map(convertDocToPatient).filter((p): p is Patient => p !== null);
       
       // Search filter (client-side for complex search)
       if (options.search.trim()) {

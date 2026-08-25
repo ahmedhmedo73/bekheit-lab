@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Icons } from '../common/Icons';
 import { RoleBadge } from '../common/Badge';
 
-export type NavView = 'patients';
+export type NavView = 'patients' | 'samples' | 'tests' | 'qc' | 'settings' | 'users';
 
 interface SidebarProps {
   activeView: NavView;
