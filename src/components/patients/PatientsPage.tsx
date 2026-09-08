@@ -7,7 +7,6 @@ import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { Select } from '../common/Select';
 import { Card } from '../common/Card';
-import { Badge } from '../common/Badge';
 import { PatientFormModal } from './PatientFormModal';
 import { PatientDetailsModal } from './PatientDetailsModal';
 import { DeletePatientModal } from './DeletePatientModal';

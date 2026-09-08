@@ -69,7 +69,7 @@ export const UsersPage: React.FC = () => {
   const [total, setTotal] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [stats, setStats] = useState({ totalStaff: 0, activeStaff: 0, onLeave: 0, admins: 0, inTraining: 0 });
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [, setIsLoading] = useState<boolean>(false);
 
   // Filter & Stats calculation
   useEffect(() => {
