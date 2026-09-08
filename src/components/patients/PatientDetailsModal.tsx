@@ -3,6 +3,7 @@ import type { Patient, PatientStatus } from '../../types/patient';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Icons } from '../common/Icons';
+import { Badge } from '../common/Badge';
 
 interface PatientDetailsModalProps {
   isOpen: boolean;

@@ -13,8 +13,8 @@ interface DashboardOverviewProps {
 
 export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate }) => {
   const { user } = useAuth();
-  const users = UserService.getAllUsers();
-  const activeStaff = users.filter((u) => u.status === 'Active');
+  const users: any = UserService.getAllUsers();
+  const activeStaff = users?.filter((u: any) => u.status === 'Active');
 
   return (
     <div className="dashboard-overview">
@@ -41,7 +41,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
             onClick={() => onNavigate('users')}
             leftIcon={<Icons.Users size={18} />}
           >
-            Manage Laboratory Personnel ({users.length})
+            Manage Laboratory Personnel ({users?.length})
           </Button>
         </div>
       </div>
@@ -55,7 +55,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
               <Icons.Users size={20} />
             </div>
           </div>
-          <div className="stat-widget-value">{activeStaff.length} <span className="text-sm font-normal text-muted">/ {users.length} Total</span></div>
+          <div className="stat-widget-value">{activeStaff?.length} <span className="text-sm font-normal text-muted">/ {users.length} Total</span></div>
           <div className="stat-widget-trend text-success">
             <Icons.Check size={14} />
             <span>Full coverage across all 8 diagnostic sections</span>
@@ -126,13 +126,13 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
           </div>
 
           <div className="on-duty-list">
-            {activeStaff.slice(0, 5).map((staff) => (
+            {activeStaff.slice(0, 5).map((staff : any) => (
               <div key={staff.id} className="on-duty-item">
                 <div
                   className="table-avatar"
                   style={{ backgroundColor: staff.avatarColor || '#0284c7' }}
                 >
-                  {staff.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+                  {staff.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
                 </div>
                 <div className="on-duty-meta">
                   <span className="on-duty-name">{staff.name}</span>
