@@ -19,8 +19,6 @@ export const LoginPage: React.FC = () => {
     const errs: { email?: string; password?: string } = {};
     if (!email.trim()) {
       errs.email = 'Staff Medical Email or ID is required.';
-    } else if (!email.includes('@') && !email.startsWith('BKL-')) {
-      errs.email = 'Please provide a valid staff email or BKL ID.';
     }
 
     if (!password) {
@@ -104,14 +102,13 @@ export const LoginPage: React.FC = () => {
 
           <form onSubmit={handleFormSubmit} className="login-form" noValidate>
             <Input
-              label="Email"
-              id="staff-email"
-              type="email"
-              placeholder="e.g. mohamed.bekheit@bekheitlab.com"
+              label="username"
+              id="staff-username"
+              placeholder="e.g. mohamed.bekheit"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               error={formErrors.email}
-              leftIcon={<Icons.Mail size={18} />}
+              leftIcon={<Icons.User size={18} />}
               required
             />
 

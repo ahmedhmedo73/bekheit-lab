@@ -18,7 +18,7 @@ const DEMO_ACCOUNTS: Record<UserRole, AuthUser> = {
   ADMIN: {
     id: 'staff-01',
     name: 'Prof. Dr. Mohamed Bekheit',
-    email: 'mohamed.bekheit@bekheitlab.com',
+    email: 'mohamed.bekheit',
     role: 'ADMIN',
     roleTitle: 'Consultant Pathologist & Lab Administrator',
     department: 'Histopathology & Cytology',
@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     // Check if matching any demo account or allow standard fallback demo login
-    if (emailClean.includes('admin') || credentials.password === 'bekheit2026' || emailClean === 'demo@bekheitlab.com' || emailClean === 'mohamed.bekheit@bekheitlab.com') {
+    if (emailClean.includes('admin') || credentials.password === 'bekheit2026' || emailClean === 'demo@bekheitlab.com' || emailClean === 'mohamed.bekheit') {
       const demoUser = DEMO_ACCOUNTS.ADMIN;
       setUser(demoUser);
       StorageService.saveAuthSession(demoUser);
@@ -94,7 +94,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     // Default friendly login check: if valid email format and password >= 4 chars, match or allow guest tech
-    if (emailClean.includes('@') && credentials.password.length >= 4) {
+    if (emailClean && credentials.password.length >= 4) {
       const genericUser: AuthUser = {
         id: 'staff-gen',
         name: credentials.email.split('@')[0].replace('.', ' ').toUpperCase(),
