@@ -1,19 +1,54 @@
 import type { MedicalStaff, StaffFormData, StaffFilterOptions, UserStatus } from '../types/user';
+import { FirestoreService } from './firestoreService';
 import { StorageService } from './storage';
 
+// Flag to switch between localStorage and Firestore
+// Set to true to use Firestore, false to use localStorage
+const USE_FIRESTORE = true;
+
 export const UserService = {
-  getAllUsers(): MedicalStaff[] {
+  async getAllUsers(): Promise<MedicalStaff[]> {
+    if (USE_FIRESTORE) {
+      try {
+        const staff = await FirestoreService.getAllStaff();
+        if (staff.length > 0) {
+          StorageService.saveStaffData(staff);
+          return staff;
+        }
+      } catch (error) {
+        console.warn('Firestore error, falling back to localStorage:', error);
+      }
+    }
     return StorageService.getStaffData();
   },
 
-  getUserById(id: string): MedicalStaff | undefined {
-    const users = this.getAllUsers();
+  async getUserById(id: string): Promise<MedicalStaff | undefined> {
+    if (USE_FIRESTORE) {
+      try {
+        const staff = await FirestoreService.getStaffById(id);
+        if (staff) return staff;
+      } catch (error) {
+        console.warn('Firestore error, falling back to localStorage:', error);
+      }
+    }
+    const users = StorageService.getStaffData();
     return users.find((u) => u.id === id);
   },
 
-  createUser(formData: StaffFormData, creatorName: string = 'Admin'): MedicalStaff {
-    const users = this.getAllUsers();
+  async createUser(formData: StaffFormData, creatorName: string = 'Admin'): Promise<MedicalStaff> {
+    if (USE_FIRESTORE) {
+      try {
+        const created = await FirestoreService.createStaff(formData, creatorName);
+        const users = StorageService.getStaffData();
+        users.unshift(created);
+        StorageService.saveStaffData(users);
+        return created;
+      } catch (error) {
+        console.warn('Firestore error, falling back to localStorage:', error);
+      }
+    }
 
+    const users = StorageService.getStaffData();
     const newId = `staff-${Date.now()}`;
     const nextNum = users.length + 1;
     const staffId = formData.staffId || `BKL-${1000 + nextNum}`;
@@ -40,8 +75,23 @@ export const UserService = {
     return newUser;
   },
 
-  updateUser(id: string, updates: Partial<StaffFormData>, modifierName: string = 'Admin'): MedicalStaff {
-    const users = this.getAllUsers();
+  async updateUser(id: string, updates: Partial<StaffFormData>, modifierName: string = 'Admin'): Promise<MedicalStaff> {
+    if (USE_FIRESTORE) {
+      try {
+        const updated = await FirestoreService.updateStaff(id, updates, modifierName);
+        const users = StorageService.getStaffData();
+        const index = users.findIndex((u) => u.id === id);
+        if (index !== -1) {
+          users[index] = updated;
+          StorageService.saveStaffData(users);
+        }
+        return updated;
+      } catch (error) {
+        console.warn('Firestore error, falling back to localStorage:', error);
+      }
+    }
+
+    const users = StorageService.getStaffData();
     const index = users.findIndex((u) => u.id === id);
     if (index === -1) {
       throw new Error(`Staff with id "${id}" was not found.`);
@@ -70,16 +120,28 @@ export const UserService = {
     return updatedUser;
   },
 
-  deleteUser(id: string): boolean {
-    const users = this.getAllUsers();
+  async deleteUser(id: string): Promise<boolean> {
+    if (USE_FIRESTORE) {
+      try {
+        const success = await FirestoreService.deleteStaff(id);
+        const users = StorageService.getStaffData();
+        const filtered = users.filter((u) => u.id !== id);
+        StorageService.saveStaffData(filtered);
+        return success;
+      } catch (error) {
+        console.warn('Firestore error, falling back to localStorage:', error);
+      }
+    }
+
+    const users = StorageService.getStaffData();
     const filtered = users.filter((u) => u.id !== id);
     if (filtered.length === users.length) return false;
     StorageService.saveStaffData(filtered);
     return true;
   },
 
-  toggleUserStatus(id: string, modifierName: string = 'Admin'): MedicalStaff {
-    const user = this.getUserById(id);
+  async toggleUserStatus(id: string, modifierName: string = 'Admin'): Promise<MedicalStaff> {
+    const user = await this.getUserById(id);
     if (!user) throw new Error('User not found');
 
     const nextStatus: UserStatus = user.status === 'Active' ? 'On Leave' : 'Active';
@@ -90,8 +152,16 @@ export const UserService = {
     );
   },
 
-  filterUsers(options: StaffFilterOptions): { data: MedicalStaff[]; total: number; totalPages: number } {
-    let list = this.getAllUsers();
+  async filterUsers(options: StaffFilterOptions): Promise<{ data: MedicalStaff[]; total: number; totalPages: number }> {
+    if (USE_FIRESTORE) {
+      try {
+        return await FirestoreService.filterStaff(options);
+      } catch (error) {
+        console.warn('Firestore error, falling back to localStorage:', error);
+      }
+    }
+
+    let list = StorageService.getStaffData();
 
     // 1. Search Query
     if (options.search.trim()) {
@@ -142,8 +212,16 @@ export const UserService = {
     };
   },
 
-  getStats() {
-    const users = this.getAllUsers();
+  async getStats() {
+    if (USE_FIRESTORE) {
+      try {
+        return await FirestoreService.getStaffStats();
+      } catch (error) {
+        console.warn('Firestore error, falling back to localStorage:', error);
+      }
+    }
+
+    const users = StorageService.getStaffData();
     return {
       totalStaff: users.length,
       activeStaff: users.filter((u) => u.status === 'Active').length,

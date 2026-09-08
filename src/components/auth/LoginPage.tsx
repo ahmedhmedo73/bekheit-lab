@@ -81,7 +81,6 @@ export const LoginPage: React.FC = () => {
 
           <div className="login-banner-footer">
             <span>© 2026 Bekheit Medical Laboratories. All rights reserved.</span>
-            <span>HIPAA & GDPR Compliant</span>
           </div>
         </div>
 
@@ -105,7 +104,7 @@ export const LoginPage: React.FC = () => {
 
           <form onSubmit={handleFormSubmit} className="login-form" noValidate>
             <Input
-              label="Staff Medical Email / ID"
+              label="Email"
               id="staff-email"
               type="email"
               placeholder="e.g. mohamed.bekheit@bekheitlab.com"
@@ -118,10 +117,10 @@ export const LoginPage: React.FC = () => {
 
             <div className="form-group">
               <Input
-                label="Security Password"
+                label="Password"
                 id="staff-password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your clinical portal password"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 error={formErrors.password}
@@ -148,7 +147,7 @@ export const LoginPage: React.FC = () => {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
-                <span>Remember this terminal session</span>
+                <span>Remember Me</span>
               </label>
 
               <a
@@ -169,7 +168,6 @@ export const LoginPage: React.FC = () => {
               size="lg"
               fullWidth
               isLoading={isLoading}
-              rightIcon={<Icons.ChevronRight size={18} />}
             >
               Sign In
             </Button>

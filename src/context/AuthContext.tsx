@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { AuthUser, LoginCredentials, UserRole } from '../types/auth';
 import { StorageService } from '../services/storage';
+import { UserService } from '../services/userService';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -51,7 +52,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await new Promise((resolve) => setTimeout(resolve, 600));
 
     const emailClean = credentials.email.trim().toLowerCase();
-    const staffList = StorageService.getStaffData();
+    let staffList = await UserService.getAllUsers();
+    if (!staffList || staffList.length === 0) {
+      staffList = StorageService.getStaffData();
+    }
     const matchingStaff = staffList.find((s) => s.email.toLowerCase() === emailClean);
 
     if (matchingStaff) {

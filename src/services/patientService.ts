@@ -85,7 +85,13 @@ export const PatientService = {
     return updatedPatient;
   },
 
+  async updatePatientStatus(id: string, status: PatientStatus): Promise<Patient> {
+    return this.updatePatient(id, { status });
+  },
+
   async deletePatient(id: string): Promise<boolean> {
+    console.log(id);
+    
     if (USE_FIRESTORE) {
       try {
         return await FirestoreService.deletePatient(id);

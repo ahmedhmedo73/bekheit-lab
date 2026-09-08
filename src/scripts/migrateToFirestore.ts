@@ -95,11 +95,130 @@ export async function checkMigrationStatus() {
   }
 }
 
+// Migrate initial analytic types to Firestore
+export async function migrateAnalyticTypesToFirestore() {
+  console.log('Starting analytic types migration to Firestore...');
+
+  const INITIAL_ANALYTIC_TYPES = [
+    { id: 'at-01', name: 'Complete Blood Count (CBC)', price: 120 },
+    { id: 'at-02', name: 'Lipid Profile', price: 200 },
+    { id: 'at-03', name: 'Fasting Blood Glucose (FBG)', price: 60 },
+    { id: 'at-04', name: 'HbA1c', price: 180 },
+    { id: 'at-05', name: 'Liver Function Tests (ALT/AST)', price: 150 },
+    { id: 'at-06', name: 'Kidney Function (Creatinine/Urea)', price: 140 },
+    { id: 'at-07', name: 'Thyroid Profile (TSH, FT3, FT4)', price: 350 },
+    { id: 'at-08', name: 'Urine Analysis', price: 50 },
+    { id: 'at-09', name: 'ESR (Erythrocyte Sedimentation Rate)', price: 40 },
+    { id: 'at-10', name: 'CRP (C-Reactive Protein)', price: 100 },
+    { id: 'at-11', name: 'Prothrombin Time (PT/INR)', price: 90 },
+    { id: 'at-12', name: 'Serum Ferritin', price: 130 },
+    { id: 'at-13', name: 'Vitamin D (25-OH)', price: 250 },
+    { id: 'at-14', name: 'Calcium & Phosphorus', price: 110 },
+    { id: 'at-15', name: 'High-Sensitivity Troponin I', price: 300 },
+  ];
+
+  try {
+    // Check if Firestore already has analytic types
+    try {
+      const existingTypes = await FirestoreService.getAllAnalyticTypes();
+      if (existingTypes.length > 0) {
+        console.log(`Firestore already contains ${existingTypes.length} analytic types. Skipping migration.`);
+        return { success: true, count: 0, message: 'Analytic types already exist in Firestore' };
+      }
+    } catch {
+      console.log('Firestore analytic types collection not accessible, proceeding with seed...');
+    }
+
+    const result = await FirestoreService.migrateAnalyticTypes(INITIAL_ANALYTIC_TYPES as any);
+    console.log(`Successfully seeded ${result.count} analytic types to Firestore`);
+    return {
+      success: true,
+      count: result.count,
+      message: `Successfully seeded ${result.count} analytic types`,
+    };
+  } catch (error) {
+    console.error('Analytic types migration error:', error);
+    return {
+      success: false,
+      count: 0,
+      message: `Migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
+}
+
+// Migrate staff to Firestore
+export async function migrateStaffToFirestore() {
+  console.log('Starting staff migration to Firestore...');
+  try {
+    const existingStaff = StorageService.getStaffData();
+    if (existingStaff.length === 0) {
+      console.log('No staff to migrate.');
+      return { success: true, count: 0, message: 'No staff to migrate' };
+    }
+
+    try {
+      const firestoreStaff = await FirestoreService.getAllStaff();
+      if (firestoreStaff.length > 0) {
+        console.log(`Firestore already contains ${firestoreStaff.length} staff members.`);
+        return { success: true, count: 0, message: 'Staff already exists in Firestore' };
+      }
+    } catch {
+      console.log('Firestore staff collection empty or inaccessible, proceeding...');
+    }
+
+    const result = await FirestoreService.migrateStaff(existingStaff);
+    console.log(`Successfully migrated ${result.count} staff members to Firestore`);
+    return {
+      success: true,
+      count: result.count,
+      message: `Successfully migrated ${result.count} staff members`,
+    };
+  } catch (error) {
+    console.error('Staff migration error:', error);
+    return {
+      success: false,
+      count: 0,
+      message: `Migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
+  }
+}
+
+// Unified function: Migrate EVERYTHING to Firestore
+export async function migrateEverythingToFirestore() {
+  console.log('==================================================');
+  console.log('🚀 MIGRATING EVERYTHING TO FIRESTORE (PATIENTS, TESTS, STAFF)...');
+  console.log('==================================================');
+
+  const staffResult = await migrateStaffToFirestore();
+  const typesResult = await migrateAnalyticTypesToFirestore();
+  const patientsResult = await migratePatientsToFirestore();
+
+  const summary = {
+    staff: staffResult,
+    analyticTypes: typesResult,
+    patients: patientsResult,
+    timestamp: new Date().toISOString(),
+  };
+
+  console.log('✅ Full migration completed:', summary);
+  return summary;
+}
+
 // Export for use in console or admin panel
 if (typeof window !== 'undefined') {
-  (window as { migrateToFirestore?: typeof migratePatientsToFirestore; checkMigrationStatus?: typeof checkMigrationStatus }).migrateToFirestore = migratePatientsToFirestore;
-  (window as { migrateToFirestore?: typeof migratePatientsToFirestore; checkMigrationStatus?: typeof checkMigrationStatus }).checkMigrationStatus = checkMigrationStatus;
-  console.log('Migration functions available on window:');
-  console.log('- migrateToFirestore(): Run migration');
-  console.log('- checkMigrationStatus(): Check migration status');
+  const w = window as any;
+  w.migrateEverything = migrateEverythingToFirestore;
+  w.migrateAll = migrateEverythingToFirestore;
+  w.migrateStaff = migrateStaffToFirestore;
+  w.migrateToFirestore = migratePatientsToFirestore;
+  w.checkMigrationStatus = checkMigrationStatus;
+  w.migrateAnalyticTypes = migrateAnalyticTypesToFirestore;
+
+  console.log('🔥 Bekheit Lab Firestore Migration Suite Available:');
+  console.log('- migrateEverything(): Migrate patients, analytic types & staff in one click');
+  console.log('- migrateToFirestore(): Migrate patients');
+  console.log('- migrateAnalyticTypes(): Seed analytic types');
+  console.log('- migrateStaff(): Migrate medical staff');
+  console.log('- checkMigrationStatus(): Check database status');
 }
+

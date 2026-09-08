@@ -1,8 +1,7 @@
 import React from 'react';
-import type { Patient } from '../../types/patient';
+import type { Patient, PatientStatus } from '../../types/patient';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
-import { Badge } from '../common/Badge';
 import { Icons } from '../common/Icons';
 
 interface PatientDetailsModalProps {
@@ -10,6 +9,7 @@ interface PatientDetailsModalProps {
   onClose: () => void;
   patient: Patient | null;
   onEdit: (patient: Patient) => void;
+  onStatusChange?: (patient: Patient, newStatus: PatientStatus) => void;
 }
 
 export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
@@ -17,6 +17,7 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
   onClose,
   patient,
   onEdit,
+  onStatusChange,
 }) => {
   if (!patient) return null;
 
@@ -78,7 +79,45 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
         <div className="dossier-top-bar">
           <div className="dossier-tag">
             <span className="tag-title">Patient Status</span>
-            {getStatusBadge(patient.status)}
+            {onStatusChange ? (
+              <select
+                value={patient.status}
+                onChange={(e) => onStatusChange(patient, e.target.value as PatientStatus)}
+                style={{
+                  backgroundColor:
+                    patient.status === 'Active'
+                      ? 'rgba(13, 148, 136, 0.12)'
+                      : patient.status === 'Pending Results'
+                      ? 'rgba(217, 119, 6, 0.12)'
+                      : patient.status === 'Urgent / STAT'
+                      ? 'rgba(239, 68, 68, 0.12)'
+                      : 'rgba(16, 185, 129, 0.12)',
+                  color:
+                    patient.status === 'Active'
+                      ? '#0d9488'
+                      : patient.status === 'Pending Results'
+                      ? '#d97706'
+                      : patient.status === 'Urgent / STAT'
+                      ? '#ef4444'
+                      : '#10b981',
+                  border: '1px solid currentColor',
+                  borderRadius: '9999px',
+                  padding: '3px 12px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+                title="Change status"
+              >
+                <option value="Active">Active (In Lab)</option>
+                <option value="Pending Results">Pending Results</option>
+                <option value="Urgent / STAT">STAT Urgent</option>
+                <option value="Completed">Completed</option>
+              </select>
+            ) : (
+              getStatusBadge(patient.status)
+            )}
           </div>
           <div className="dossier-tag">
             <span className="tag-title">Age</span>

@@ -51,9 +51,13 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeView }) =
   const getBreadcrumbTitle = () => {
     switch (activeView) {
       case 'patients':
-        return 'Patient Records & Diagnostic Intake';
+        return 'Patients';
+      case 'analytics':
+        return 'Analytic Types';
+      case 'users':
+        return 'Medical Staff';
       default:
-        return 'Patient Records';
+        return 'Patients';
     }
   };
 
@@ -70,11 +74,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeView }) =
         </button>
 
         <div className="header-breadcrumb">
-          <div className="lab-system-badge">
-            <span className="live-indicator-dot" />
-            <span>LIMS Core Active</span>
-          </div>
-          <span className="breadcrumb-separator">/</span>
           <h2 className="breadcrumb-current">{getBreadcrumbTitle()}</h2>
         </div>
       </div>

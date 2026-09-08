@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { Patient, PatientFormData, PatientStatus, PatientFilterOptions } from '../../types/patient';
 import { PatientService } from '../../services/patientService';
-import { StorageService } from '../../services/storage';
 import { useToast } from '../../context/ToastContext';
 import { Icons } from '../common/Icons';
 import { Button } from '../common/Button';
@@ -12,6 +11,8 @@ import { Badge } from '../common/Badge';
 import { PatientFormModal } from './PatientFormModal';
 import { PatientDetailsModal } from './PatientDetailsModal';
 import { DeletePatientModal } from './DeletePatientModal';
+import { AddAnalyticResultModal } from '../analytics/AddAnalyticResultModal';
+import { PatientResultsModal } from '../analytics/PatientResultsModal';
 
 const STATUS_FILTER: { value: PatientStatus | 'ALL'; label: string }[] = [
   { value: 'ALL', label: 'All Statuses' },
@@ -22,7 +23,7 @@ const STATUS_FILTER: { value: PatientStatus | 'ALL'; label: string }[] = [
 ];
 
 export const PatientsPage: React.FC = () => {
-  const { success, error: toastError, info } = useToast();
+  const { success, error: toastError } = useToast();
 
   const [filterOptions, setFilterOptions] = useState<PatientFilterOptions>({
     search: '',
@@ -38,6 +39,8 @@ export const PatientsPage: React.FC = () => {
   const [selectedPatientForEdit, setSelectedPatientForEdit] = useState<Patient | null>(null);
   const [selectedPatientForDelete, setSelectedPatientForDelete] = useState<Patient | null>(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState<boolean>(false);
+  const [selectedPatientForAddResult, setSelectedPatientForAddResult] = useState<Patient | null>(null);
+  const [selectedPatientForViewResults, setSelectedPatientForViewResults] = useState<Patient | null>(null);
   const [patientList, setPatientList] = useState<Patient[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
@@ -135,27 +138,71 @@ export const PatientsPage: React.FC = () => {
     success('CSV Export Generated', 'Patient directory downloaded successfully.');
   };
 
-  const handleResetDefaults = () => {
-    if (window.confirm('Reset patient records to defaults?')) {
-      StorageService.resetToDefault();
+  const handleStatusChange = async (patient: Patient, newStatus: PatientStatus) => {
+    if (patient.status === newStatus) return;
+    try {
+      await PatientService.updatePatientStatus(patient.id, newStatus);
+      success('Status Updated', `${patient.name}'s status changed to "${newStatus}".`);
       refreshList();
-      info('Reset Completed', 'Default patient records restored.');
+      if (selectedPatientForDetails && selectedPatientForDetails.id === patient.id) {
+        setSelectedPatientForDetails({ ...selectedPatientForDetails, status: newStatus });
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Could not update status.';
+      toastError('Update Failed', message);
     }
   };
 
-  const renderStatusBadge = (status: PatientStatus) => {
-    switch (status) {
-      case 'Active':
-        return <Badge variant="teal" dot size="sm">Active (In Lab)</Badge>;
-      case 'Pending Results':
-        return <Badge variant="warning" dot size="sm">Pending Results</Badge>;
-      case 'Urgent / STAT':
-        return <Badge variant="danger" dot size="sm">STAT Urgent</Badge>;
-      case 'Completed':
-        return <Badge variant="success" dot size="sm">Completed</Badge>;
-      default:
-        return <Badge variant="neutral" size="sm">{status}</Badge>;
-    }
+  const renderStatusBadge = (patient: Patient) => {
+    const status = patient.status;
+    const colors: Record<PatientStatus, { bg: string; color: string; border: string; dot: string }> = {
+      'Active': { bg: 'rgba(13, 148, 136, 0.12)', color: '#0d9488', border: 'rgba(13, 148, 136, 0.35)', dot: '#0d9488' },
+      'Pending Results': { bg: 'rgba(217, 119, 6, 0.12)', color: '#d97706', border: 'rgba(217, 119, 6, 0.35)', dot: '#d97706' },
+      'Urgent / STAT': { bg: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', border: 'rgba(239, 68, 68, 0.35)', dot: '#ef4444' },
+      'Completed': { bg: 'rgba(16, 185, 129, 0.12)', color: '#10b981', border: 'rgba(16, 185, 129, 0.35)', dot: '#10b981' },
+    };
+    const c = colors[status] || { bg: '#f3f4f6', color: '#374151', border: '#e5e7eb', dot: '#9ca3af' };
+
+    return (
+      <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+        <span
+          style={{
+            position: 'absolute',
+            left: '9px',
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            backgroundColor: c.dot,
+            pointerEvents: 'none',
+            zIndex: 1,
+          }}
+        />
+        <select
+          value={status}
+          onChange={(e) => handleStatusChange(patient, e.target.value as PatientStatus)}
+          style={{
+            backgroundColor: c.bg,
+            color: c.color,
+            border: `1px solid ${c.border}`,
+            borderRadius: '9999px',
+            padding: '3px 14px 3px 20px',
+            fontSize: '11px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            outline: 'none',
+            fontFamily: 'inherit',
+            transition: 'all 0.2s ease',
+          }}
+          title="Click to change patient status"
+          aria-label={`Change status for ${patient.name}`}
+        >
+          <option value="Active">Active (In Lab)</option>
+          <option value="Pending Results">Pending Results</option>
+          <option value="Urgent / STAT">STAT Urgent</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </div>
+    );
   };
 
   return (
@@ -204,7 +251,6 @@ export const PatientsPage: React.FC = () => {
           <div className="stat-content">
             <span className="stat-label">Total Patients</span>
             <span className="stat-value">{stats.total}</span>
-            <span className="stat-badge text-teal font-medium">All Requisitions</span>
           </div>
         </Card>
 
@@ -215,7 +261,6 @@ export const PatientsPage: React.FC = () => {
           <div className="stat-content">
             <span className="stat-label">Active in Lab</span>
             <span className="stat-value">{stats.active}</span>
-            <span className="stat-badge text-success font-medium">Under Testing</span>
           </div>
         </Card>
 
@@ -226,7 +271,6 @@ export const PatientsPage: React.FC = () => {
           <div className="stat-content">
             <span className="stat-label">Pending Results</span>
             <span className="stat-value">{stats.pending}</span>
-            <span className="stat-badge text-warning font-medium">Awaiting Sign-off</span>
           </div>
         </Card>
 
@@ -237,7 +281,6 @@ export const PatientsPage: React.FC = () => {
           <div className="stat-content">
             <span className="stat-label">STAT / Urgent</span>
             <span className="stat-value">{stats.stat}</span>
-            <span className="stat-badge text-danger font-medium">Priority Emergency</span>
           </div>
         </Card>
       </div>
@@ -247,7 +290,7 @@ export const PatientsPage: React.FC = () => {
         <div className="toolbar-grid" style={{ gridTemplateColumns: '3fr 1fr' }}>
           <div className="search-field-wrap">
             <Input
-              placeholder="Search by patient name, phone, age, patient ID, or subtitle..."
+              placeholder="Search by patient ID, patient name, phone, job title or subtitle..."
               value={filterOptions.search}
               onChange={(e) =>
                 setFilterOptions((prev) => ({ ...prev, search: e.target.value, page: 1 }))
@@ -430,13 +473,12 @@ export const PatientsPage: React.FC = () => {
 
                     {/* Age */}
                     <td>
-                      <span className="font-bold text-sm">{patient.age} yrs</span>
+                      <span className="font-bold text-sm">{patient.age}</span>
                     </td>
 
                     {/* Phone Number */}
                     <td>
                       <div className="flex items-center gap-2">
-                        <Icons.Phone size={14} className="text-muted" />
                         <span className="font-mono font-medium text-sm">{patient.phone}</span>
                       </div>
                     </td>
@@ -455,7 +497,7 @@ export const PatientsPage: React.FC = () => {
                     </td>
 
                     {/* Status */}
-                    <td>{renderStatusBadge(patient.status)}</td>
+                    <td>{renderStatusBadge(patient)}</td>
 
                     {/* Action Buttons */}
                     <td className="text-right">
@@ -468,6 +510,44 @@ export const PatientsPage: React.FC = () => {
                           aria-label={`View details for ${patient.name}`}
                         >
                           <Icons.Eye size={17} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="action-icon-btn text-success"
+                          onClick={() => setSelectedPatientForAddResult(patient)}
+                          title="Add Analytic Results"
+                          aria-label={`Add results for ${patient.name}`}
+                        >
+                          <Icons.FlaskConical size={17} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="action-icon-btn text-purple"
+                          onClick={() => setSelectedPatientForViewResults(patient)}
+                          title="View Results & Print"
+                          aria-label={`View results for ${patient.name}`}
+                        >
+                          <Icons.ClipboardList size={17} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="action-icon-btn text-warning"
+                          onClick={() => {
+                            const cycle: Record<PatientStatus, PatientStatus> = {
+                              'Active': 'Pending Results',
+                              'Pending Results': 'Completed',
+                              'Completed': 'Active',
+                              'Urgent / STAT': 'Completed',
+                            };
+                            handleStatusChange(patient, cycle[patient.status] || 'Active');
+                          }}
+                          title={`Quick cycle status (Current: ${patient.status})`}
+                          aria-label={`Cycle status for ${patient.name}`}
+                        >
+                          <Icons.RotateCw size={16} />
                         </button>
 
                         <button
@@ -545,17 +625,6 @@ export const PatientsPage: React.FC = () => {
         </div>
       </Card>
 
-      <div className="system-reset-row">
-        <button
-          type="button"
-          className="reset-defaults-link"
-          onClick={handleResetDefaults}
-        >
-          <Icons.RefreshCw size={13} />
-          <span>Reset Sample Patient Records</span>
-        </button>
-      </div>
-
       {/* Form Modal */}
       <PatientFormModal
         isOpen={isFormModalOpen}
@@ -577,6 +646,7 @@ export const PatientsPage: React.FC = () => {
           setSelectedPatientForEdit(patient);
           setIsFormModalOpen(true);
         }}
+        onStatusChange={handleStatusChange}
       />
 
       {/* Delete Confirmation Modal */}
@@ -585,6 +655,21 @@ export const PatientsPage: React.FC = () => {
         onClose={() => setSelectedPatientForDelete(null)}
         onConfirm={handleDeleteConfirm}
         patient={selectedPatientForDelete}
+      />
+
+      {/* Add Analytic Result Modal */}
+      <AddAnalyticResultModal
+        isOpen={!!selectedPatientForAddResult}
+        onClose={() => setSelectedPatientForAddResult(null)}
+        patient={selectedPatientForAddResult}
+        onSuccess={refreshList}
+      />
+
+      {/* View Patient Results Modal */}
+      <PatientResultsModal
+        isOpen={!!selectedPatientForViewResults}
+        onClose={() => setSelectedPatientForViewResults(null)}
+        patient={selectedPatientForViewResults}
       />
     </div>
   );

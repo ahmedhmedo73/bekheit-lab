@@ -6,6 +6,8 @@ import { LoginPage } from './components/auth/LoginPage';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import type { NavView } from './components/layout/Sidebar';
 import { PatientsPage } from './components/patients/PatientsPage';
+import { AnalyticTypesPage } from './components/analytics/AnalyticTypesPage';
+import { UsersPage } from './components/users/UsersPage';
 import './scripts/migrateToFirestore';
 
 function AppContent() {
@@ -27,9 +29,21 @@ function AppContent() {
     return <LoginPage />;
   }
 
+  const renderActiveView = () => {
+    switch (activeView) {
+      case 'analytics':
+        return <AnalyticTypesPage />;
+      case 'users':
+        return <UsersPage />;
+      case 'patients':
+      default:
+        return <PatientsPage />;
+    }
+  };
+
   return (
     <DashboardLayout activeView={activeView} onSelectView={setActiveView}>
-      <PatientsPage />
+      {renderActiveView()}
     </DashboardLayout>
   );
 }

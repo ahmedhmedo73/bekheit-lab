@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { MedicalStaff, StaffFormData, Department, UserStatus, StaffFilterOptions } from '../../types/user';
 import type { UserRole } from '../../types/auth';
 import { UserService } from '../../services/userService';
@@ -65,26 +65,57 @@ export const UsersPage: React.FC = () => {
     setRefreshKey((prev) => prev + 1);
   }, []);
 
+  const [staffList, setStaffList] = useState<MedicalStaff[]>([]);
+  const [total, setTotal] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [stats, setStats] = useState({ totalStaff: 0, activeStaff: 0, onLeave: 0, admins: 0, inTraining: 0 });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   // Filter & Stats calculation
-  const { data: staffList, total, totalPages } = useMemo(() => {
-    void refreshKey;
-    return UserService.filterUsers(filterOptions);
+  useEffect(() => {
+    let isMounted = true;
+    const loadStaff = async () => {
+      setIsLoading(true);
+      try {
+        const result = await UserService.filterUsers(filterOptions);
+        if (isMounted) {
+          setStaffList(result.data);
+          setTotal(result.total);
+          setTotalPages(result.totalPages);
+        }
+      } catch (err) {
+        console.error('Error loading staff:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+    loadStaff();
+    return () => { isMounted = false; };
   }, [filterOptions, refreshKey]);
 
-  const stats = useMemo(() => {
-    void refreshKey;
-    return UserService.getStats();
+  useEffect(() => {
+    let isMounted = true;
+    const loadStats = async () => {
+      try {
+        const s = await UserService.getStats();
+        if (isMounted) setStats(s);
+      } catch (err) {
+        console.error('Error loading staff stats:', err);
+      }
+    };
+    loadStats();
+    return () => { isMounted = false; };
   }, [refreshKey]);
 
   // Handle Form Submission (Create or Edit)
-  const handleFormSubmit = (formData: StaffFormData) => {
+  const handleFormSubmit = async (formData: StaffFormData) => {
     try {
       const creatorName = currentUser?.name || 'Authorized Staff';
       if (selectedStaffForEdit) {
-        UserService.updateUser(selectedStaffForEdit.id, formData, creatorName);
+        await UserService.updateUser(selectedStaffForEdit.id, formData, creatorName);
         success('Staff Record Updated', `Successfully updated profile for ${formData.name}.`);
       } else {
-        const created = UserService.createUser(formData, creatorName);
+        const created = await UserService.createUser(formData, creatorName);
         success('Staff Member Enrolled', `${created.name} registered with ID ${created.staffId}.`);
       }
       setIsFormModalOpen(false);
@@ -96,11 +127,11 @@ export const UsersPage: React.FC = () => {
   };
 
   // Handle Delete Confirmation
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!selectedStaffForDelete) return;
     try {
       const name = selectedStaffForDelete.name;
-      UserService.deleteUser(selectedStaffForDelete.id);
+      await UserService.deleteUser(selectedStaffForDelete.id);
       success('Staff Member Removed', `${name} has been de-registered from the LIMS.`);
       setSelectedStaffForDelete(null);
       refreshList();
@@ -110,9 +141,9 @@ export const UsersPage: React.FC = () => {
   };
 
   // Handle Status Toggle
-  const handleToggleStatus = (staff: MedicalStaff) => {
+  const handleToggleStatus = async (staff: MedicalStaff) => {
     try {
-      const updated = UserService.toggleUserStatus(staff.id, currentUser?.name || 'Admin');
+      const updated = await UserService.toggleUserStatus(staff.id, currentUser?.name || 'Admin');
       info(
         'Status Toggled',
         `${updated.name} status is now marked as ${updated.status}.`
@@ -124,8 +155,8 @@ export const UsersPage: React.FC = () => {
   };
 
   // Export Staff Data to CSV
-  const handleExportCSV = () => {
-    const all = UserService.getAllUsers();
+  const handleExportCSV = async () => {
+    const all = await UserService.getAllUsers();
     const headers = ['Staff ID', 'Name', 'Email', 'Phone', 'Role', 'Department', 'Specialization', 'License #', 'Shift', 'Status', 'Join Date'];
     const rows = all.map((s) => [
       s.staffId,
