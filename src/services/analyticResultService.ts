@@ -2,6 +2,9 @@ import type { AnalyticResult, AnalyticResultFormData } from '../types/analyticTy
 import { FirestoreService } from './firestoreService';
 
 export const AnalyticResultService = {
+  async createMany(data: AnalyticResultFormData[]): Promise<void> {
+    return FirestoreService.createAnalyticResults(data);
+  },
   async getByPatientId(patientId: string): Promise<AnalyticResult[]> {
     try {
       return await FirestoreService.getResultsByPatientId(patientId);

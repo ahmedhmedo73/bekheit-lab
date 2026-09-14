@@ -8,6 +8,7 @@ import { Input } from '../common/Input';
 import { Card } from '../common/Card';
 import { AnalyticTypeFormModal } from './AnalyticTypeFormModal';
 import { DeleteAnalyticTypeModal } from './DeleteAnalyticTypeModal';
+import { analyticChildren } from '../../services/analyticSchema';
 
 export const AnalyticTypesPage: React.FC = () => {
   const { success, error: toastError } = useToast();
@@ -33,18 +34,19 @@ export const AnalyticTypesPage: React.FC = () => {
         setTypes(data);
       } catch (err) {
         console.error('Error loading analytic types:', err);
+        toastError('Catalog Failed', 'Could not load or migrate analytic types. Reload to retry.');
         setTypes([]);
       }
     };
     load();
-  }, [refreshKey]);
+  }, [refreshKey, toastError]);
 
   // Filter & search
   useEffect(() => {
     let list = [...types];
     if (search.trim()) {
       const q = search.toLowerCase().trim();
-      list = list.filter((t) => t.name.toLowerCase().includes(q));
+      list = list.filter((t) => t.name.toLowerCase().includes(q) || analyticChildren(t).some(child => child.name.toLowerCase().includes(q)));
     }
     setFilteredTypes(list);
     setPage(1);
@@ -99,7 +101,7 @@ export const AnalyticTypesPage: React.FC = () => {
         <div>
           <h1 className="page-title">Analytic Types Catalog</h1>
           <p className="page-subtitle">
-            Manage laboratory test types, their names and pricing for patient billing.
+            Manage parent analytic panels, child tests, units, reference ranges and panel pricing.
           </p>
         </div>
 
@@ -272,6 +274,14 @@ export const AnalyticTypesPage: React.FC = () => {
                         </div>
                         <div className="staff-meta-cell">
                           <span className="font-semibold text-sm text-main">{type.name}</span>
+                          <table className="medical-table" style={{ marginTop: 8 }}>
+                            <thead><tr><th>Child Analytic</th><th>Unit</th><th>Reference Range</th></tr></thead>
+                            <tbody>{analyticChildren(type).map(child => (
+                              <tr key={child.id}><td>{child.name}</td><td>{child.unit || 'Not specified'}</td><td style={{ whiteSpace: 'normal', minWidth: 200, maxWidth: 360 }}>{child.referenceRange || 'Not specified'}
+                                {child.referenceSource?.startsWith('https://') && <div><a href={child.referenceSource} target="_blank" rel="noreferrer">Published source</a></div>}
+                              </td></tr>
+                            ))}</tbody>
+                          </table>
                         </div>
                       </div>
                     </td>

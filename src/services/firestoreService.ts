@@ -9,11 +9,15 @@ import {
   query,
   where,
   orderBy,
+  writeBatch,
   QueryDocumentSnapshot,
   DocumentSnapshot,
   type DocumentData,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { migrateAnalyticHierarchy } from '../scripts/migrateAnalyticHierarchy';
+import { typeMigration } from './analyticSchema';
+import { ANALYTIC_CATALOG } from '../data/analyticCatalog';
 import type { Patient, PatientFormData } from '../types/patient';
 import type { AnalyticType, AnalyticTypeFormData, AnalyticResult, AnalyticResultFormData } from '../types/analyticType';
 import type { MedicalStaff, StaffFormData, StaffFilterOptions } from '../types/user';
@@ -280,6 +284,7 @@ export const FirestoreService = {
 
   async getAllAnalyticTypes(): Promise<AnalyticType[]> {
     if (!db) throw new Error('Firestore is not initialized');
+    await migrateAnalyticHierarchy();
     try {
       const ref = collection(db, ANALYTIC_TYPES_COLLECTION);
       const q = query(ref, orderBy('name', 'asc'));
@@ -300,6 +305,7 @@ export const FirestoreService = {
       const ref = collection(db, ANALYTIC_TYPES_COLLECTION);
       const newData = cleanFirestoreData({
         ...data,
+        ...typeMigration(data as AnalyticType),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
@@ -344,6 +350,7 @@ export const FirestoreService = {
 
   async getResultsByPatientId(patientId: string): Promise<AnalyticResult[]> {
     if (!db) throw new Error('Firestore is not initialized');
+    await migrateAnalyticHierarchy();
     try {
       const ref = collection(db, ANALYTIC_RESULTS_COLLECTION);
       const q = query(ref, where('patientId', '==', patientId));
@@ -358,6 +365,18 @@ export const FirestoreService = {
       console.error('Error fetching analytic results:', error);
       throw new Error('Failed to fetch analytic results from Firestore', { cause: error });
     }
+  },
+
+  async createAnalyticResults(entries: AnalyticResultFormData[]): Promise<void> {
+    if (!db) throw new Error('Firestore is not initialized');
+    if (entries.length > 500) throw new Error('Save at most 500 panels at a time.');
+    const batch = writeBatch(db);
+    for (const data of entries) {
+      batch.set(doc(collection(db, ANALYTIC_RESULTS_COLLECTION)), {
+        ...data, schemaVersion: 2, createdAt: new Date().toISOString(),
+      });
+    }
+    await batch.commit();
   },
 
   async createAnalyticResult(data: AnalyticResultFormData): Promise<AnalyticResult> {
@@ -394,7 +413,10 @@ export const FirestoreService = {
     try {
       const ref = collection(db, ANALYTIC_TYPES_COLLECTION);
       const batch = types.map(async (t) => {
-        const data = { ...t, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+        const template = ANALYTIC_CATALOG.find(item => item.legacyName === t.name);
+        const data = { ...t, ...typeMigration(t),
+          ...(template ? { name: template.name, children: template.children, catalogExampleVersion: 1 } : {}),
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
         return addDoc(ref, data);
       });
       await Promise.all(batch);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Patient } from '../../types/patient';
-import type { AnalyticType, AnalyticResultFormData } from '../../types/analyticType';
+import type { AnalyticType, AnalyticResultFormData, ChildAnalyticResult } from '../../types/analyticType';
+import { analyticChildren } from '../../services/analyticSchema';
 import { AnalyticTypeService } from '../../services/analyticTypeService';
 import { AnalyticResultService } from '../../services/analyticResultService';
 import { useToast } from '../../context/ToastContext';
@@ -21,6 +22,7 @@ interface ResultEntry {
   analyticTypeName: string;
   price: number;
   result: string;
+  children: ChildAnalyticResult[];
   notes: string;
 }
 
@@ -37,10 +39,11 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      AnalyticTypeService.getAll().then(setAnalyticTypes).catch(console.error);
+      setAnalyticTypes([]);
+      AnalyticTypeService.getAll().then(setAnalyticTypes).catch(() => toastError('Catalog Failed', 'Could not load or migrate analytic types. Reopen this dialog to retry.'));
       setEntries([]);
     }
-  }, [isOpen]);
+  }, [isOpen, toastError]);
 
   const addEntry = (type: AnalyticType) => {
     // Prevent duplicates
@@ -52,6 +55,7 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
         analyticTypeName: type.name,
         price: type.price,
         result: '',
+        children: analyticChildren(type).map(child => ({ ...child, result: '' })),
         notes: '',
       },
     ]);
@@ -70,13 +74,14 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
   const totalPrice = entries.reduce((sum, e) => sum + e.price, 0);
 
   const handleSubmit = async () => {
+    if (saving) return;
     if (!patient) return;
     if (entries.length === 0) {
       toastError('No Tests Selected', 'Please add at least one analytic test.');
       return;
     }
 
-    const emptyResults = entries.filter((e) => !e.result.trim());
+    const emptyResults = entries.filter((e) => !e.children.length || e.children.some(child => !child.result.trim()));
     if (emptyResults.length > 0) {
       toastError(
         'Missing Results',
@@ -87,17 +92,20 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
 
     setSaving(true);
     try {
-      for (const entry of entries) {
+      const results = entries.map(entry => {
         const data: AnalyticResultFormData = {
           patientId: patient.id,
           analyticTypeId: entry.analyticTypeId,
           analyticTypeName: entry.analyticTypeName,
           price: entry.price,
-          result: entry.result.trim(),
+          result: '',
+          children: entry.children.map(child => ({ ...child, result: child.result.trim() })),
+          schemaVersion: 2,
           notes: entry.notes?.trim() || '',
         };
-        await AnalyticResultService.create(data);
-      }
+        return data;
+      });
+      await AnalyticResultService.createMany(results);
       success(
         'Results Saved',
         `${entries.length} analytic result(s) recorded for ${patient.name}.`
@@ -121,7 +129,7 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => { if (!saving) onClose(); }}
       maxWidth="lg"
       title={
         <div className="flex items-center gap-2">
@@ -138,7 +146,7 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
               Total: {totalPrice.toFixed(2)} EGP
             </span>
           </div>
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
           <Button
@@ -146,6 +154,7 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
             variant="medical"
             onClick={handleSubmit}
             isLoading={saving}
+            disabled={saving}
             leftIcon={<Icons.Check size={16} />}
           >
             Save Results ({entries.length})
@@ -179,6 +188,7 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
               type="button"
               className="btn btn-outline btn-sm"
               onClick={() => addEntry(type)}
+              disabled={saving || analyticChildren(type).length === 0}
               style={{ fontSize: '0.8rem' }}
             >
               <Icons.Plus size={14} />
@@ -232,22 +242,26 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
                       type="button"
                       className="action-icon-btn text-danger"
                       onClick={() => removeEntry(idx)}
+                      disabled={saving}
                       title="Remove this test"
                     >
                       <Icons.X size={16} />
                     </button>
                   </div>
                   <div className="form-row-2">
-                    <Input
-                      label="Result Value"
-                      placeholder="e.g. 12.5 g/dL, Positive, Normal"
-                      value={entry.result}
-                      onChange={(e) => updateEntry(idx, 'result', e.target.value)}
-                      required
-                      leftIcon={<Icons.Activity size={14} />}
-                    />
+                    <div>
+                      {entry.children.map(child => (
+                        <div key={child.id} style={{ marginBottom: 12 }}>
+                          <Input id={`result-${entry.analyticTypeId}-${child.id}`} label={child.name} placeholder="Result value" value={child.result} required disabled={saving}
+                            onChange={event => setEntries(prev => prev.map((item, i) => i === idx ? { ...item, children: item.children.map(test => test.id === child.id ? { ...test, result: event.target.value } : test) } : item))} />
+                          <p className="text-xs text-muted">Unit: {child.unit || 'Not specified'} | Reference range: {child.referenceRange || 'Not specified'}</p>
+                        </div>
+                      ))}
+                    </div>
                     <Input
                       label="Notes (optional)"
+                      id={`notes-${entry.analyticTypeId}`}
+                      disabled={saving}
                       placeholder="e.g. Slightly elevated"
                       value={entry.notes}
                       onChange={(e) => updateEntry(idx, 'notes', e.target.value)}

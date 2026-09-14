@@ -1,7 +1,21 @@
+export interface ChildAnalytic {
+  id: string;
+  name: string;
+  unit: string;
+  referenceRange: string;
+  referenceSource?: string;
+}
+
+export interface ChildAnalyticResult extends ChildAnalytic {
+  result: string;
+}
+
 export interface AnalyticType {
   id: string;
   name: string;
   price: number;
+  children?: ChildAnalytic[];
+  schemaVersion?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -15,6 +29,8 @@ export interface AnalyticResult {
   analyticTypeName: string;
   price: number;
   result: string;
+  children?: ChildAnalyticResult[];
+  schemaVersion?: number;
   notes?: string;
   createdAt?: string;
 }

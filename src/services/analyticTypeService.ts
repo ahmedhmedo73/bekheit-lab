@@ -3,12 +3,7 @@ import { FirestoreService } from './firestoreService';
 
 export const AnalyticTypeService = {
   async getAll(): Promise<AnalyticType[]> {
-    try {
-      return await FirestoreService.getAllAnalyticTypes();
-    } catch (error) {
-      console.warn('Firestore error fetching analytic types:', error);
-      return [];
-    }
+    return await FirestoreService.getAllAnalyticTypes();
   },
 
   async create(data: AnalyticTypeFormData): Promise<AnalyticType> {
