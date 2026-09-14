@@ -6,12 +6,7 @@ export const AnalyticResultService = {
     return FirestoreService.createAnalyticResults(data);
   },
   async getByPatientId(patientId: string): Promise<AnalyticResult[]> {
-    try {
-      return await FirestoreService.getResultsByPatientId(patientId);
-    } catch (error) {
-      console.warn('Firestore error fetching analytic results:', error);
-      return [];
-    }
+    return await FirestoreService.getResultsByPatientId(patientId);
   },
 
   async create(data: AnalyticResultFormData): Promise<AnalyticResult> {

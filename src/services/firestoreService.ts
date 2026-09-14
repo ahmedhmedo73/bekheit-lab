@@ -16,6 +16,7 @@ import {
   type DocumentData,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { trackServiceRequests } from './requestActivity';
 import { migrateAnalyticHierarchy } from '../scripts/migrateAnalyticHierarchy';
 import { typeMigration } from './analyticSchema';
 import type { Patient, PatientFormData } from '../types/patient';
@@ -66,7 +67,7 @@ function getRandomMedicalColor(): string {
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-export const FirestoreService = {
+const firestoreService = {
   // Get all patients
   async getAllPatients(): Promise<Patient[]> {
     if (!db) {
@@ -628,3 +629,5 @@ export const FirestoreService = {
     }
   },
 };
+
+export const FirestoreService = trackServiceRequests(firestoreService);

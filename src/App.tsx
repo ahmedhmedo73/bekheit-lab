@@ -9,6 +9,7 @@ import { PatientsPage } from './components/patients/PatientsPage';
 import { AnalyticTypesPage } from './components/analytics/AnalyticTypesPage';
 import { UsersPage } from './components/users/UsersPage';
 import './scripts/migrateToFirestore';
+import { GlobalRequestLoader } from './components/common/GlobalRequestLoader';
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -53,6 +54,7 @@ export default function App() {
     <ToastProvider>
       <AuthProvider>
         <AppContent />
+        <GlobalRequestLoader />
         <ToastContainer />
       </AuthProvider>
     </ToastProvider>

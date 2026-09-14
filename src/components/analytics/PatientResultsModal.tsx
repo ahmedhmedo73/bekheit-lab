@@ -5,8 +5,10 @@ import { AnalyticResultService } from '../../services/analyticResultService';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Icons } from '../common/Icons';
-import { buildAnalyticReport } from '../../services/analyticReport';
+import { buildAnalyticReport, latestPanelResults } from '../../services/analyticReport';
 import { resultMigration } from '../../services/analyticSchema';
+import { selectedResultTotal, resultPriceCents, togglePrintResult } from '../../services/printSelection';
+import { useToast } from '../../context/ToastContext';
 
 
 interface PatientResultsModalProps {
@@ -22,26 +24,60 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
 }) => {
   const [results, setResults] = useState<AnalyticResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [loadError, setLoadError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [deletingResult, setDeletingResult] = useState<AnalyticResult | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { success, error: toastError } = useToast();
 
   useEffect(() => {
+    let active = true;
     if (isOpen && patient) {
       setLoading(true);
+      setResults([]);
+      setSelectedIds([]);
+      setLoadError('');
+      setDeletingResult(null);
       AnalyticResultService.getByPatientId(patient.id)
-        .then(setResults)
-        .catch(console.error)
-        .finally(() => setLoading(false));
+        .then(data => {
+          if (!active) return;
+          setResults(data);
+          setSelectedIds(latestPanelResults(data).map(result => result.id));
+        })
+        .catch(() => { if (active) setLoadError('Could not load results. Please retry.'); })
+        .finally(() => { if (active) setLoading(false); });
     }
-  }, [isOpen, patient]);
+    return () => { active = false; };
+  }, [isOpen, patient, refreshKey]);
 
   if (!patient) return null;
 
-  const totalPrice = results.reduce((sum, r) => sum + r.price, 0);
+  const selectedResults = results.filter(result => selectedIds.includes(result.id));
+  const totalPrice = selectedResultTotal(selectedResults);
+  const latestIds = new Set(latestPanelResults(results).map(result => result.id));
+
+  const handleDelete = async () => {
+    if (!deletingResult || deleting) return;
+    setDeleting(true);
+    try {
+      const removed = await AnalyticResultService.delete(deletingResult.id);
+      if (!removed) throw new Error('The result was not deleted.');
+      setResults(previous => previous.filter(result => result.id !== deletingResult.id));
+      setSelectedIds(previous => previous.filter(id => id !== deletingResult.id));
+      setDeletingResult(null);
+      success('Result Deleted', 'The saved analytic result has been removed.');
+    } catch (error) {
+      toastError('Delete Failed', error instanceof Error ? error.message : 'Could not delete the result.');
+    } finally { setDeleting(false); }
+  };
 
   const handlePrint = () => {
+    if (loading || deleting || selectedResults.length === 0) return;
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const htmlContent = buildAnalyticReport(patient, results);
+    const htmlContent = buildAnalyticReport(patient, selectedResults);
 
     printWindow.document.write(htmlContent);
     printWindow.document.close();
@@ -50,7 +86,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
       try {
         printWindow.print();
       } catch {
-        // Handled by inline script
+        toastError('Print Failed', 'Please use the browser print command in the report window.');
       }
     }, 300);
   };
@@ -58,8 +94,8 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
-      maxWidth="lg"
+      onClose={() => { if (!deleting) onClose(); }}
+      maxWidth="xl"
       title={
         <div className="flex items-center gap-2">
           <Icons.ClipboardList size={22} className="text-teal" />
@@ -72,20 +108,20 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
           <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Icons.DollarSign size={16} className="text-teal" />
             <span className="font-bold text-sm text-teal">
-              Total: {totalPrice.toFixed(2)} EGP
+              Selected Total: {totalPrice.toFixed(2)} EGP
             </span>
           </div>
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={deleting}>
             Close
           </Button>
           <Button
             type="button"
             variant="medical"
             onClick={handlePrint}
-            disabled={loading || results.length === 0}
+            disabled={loading || deleting || selectedResults.length === 0}
             leftIcon={<Icons.Printer size={16} />}
           >
-            Print Report
+            Print Selected ({selectedResults.length})
           </Button>
         </div>
       }
@@ -95,6 +131,8 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
           <div className="btn-spinner" style={{ width: 24, height: 24 }} />
           <span className="text-sm text-muted">Loading results…</span>
         </div>
+      ) : loadError ? (
+        <div role="alert"><p>{loadError}</p><Button type="button" onClick={() => setRefreshKey(key => key + 1)}>Retry</Button></div>
       ) : results.length === 0 ? (
         <div className="empty-state-box" style={{ padding: '2rem' }}>
           <div className="empty-icon-wrap">
@@ -106,26 +144,40 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
           </p>
         </div>
       ) : (
+        <>
+        <p className="text-sm text-muted">Select the analytics to print. One result per analytic can be selected; the latest is selected by default. Uncheck a result to remove it from this printout.</p>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          <Button type="button" variant="outline" size="sm" disabled={deleting} onClick={() => setSelectedIds(latestPanelResults(results).map(result => result.id))}>Select Latest</Button>
+          <Button type="button" variant="outline" size="sm" disabled={deleting} onClick={() => setSelectedIds([])}>Clear Selection</Button>
+        </div>
+        {deletingResult && <div role="alert" style={{ padding: 16, marginBottom: 16, border: '1px solid #dc2626', borderRadius: 8 }}>
+          <p>Delete the saved result for <strong>{deletingResult.analyticTypeName}</strong>{deletingResult.createdAt ? ` (${new Date(deletingResult.createdAt).toLocaleString()})` : ''}? This permanently deletes this result from the patient's history. To omit it only from printing, cancel and uncheck it.</p>
+          <div style={{ display: 'flex', gap: 8 }}><Button type="button" variant="outline" disabled={deleting} onClick={() => setDeletingResult(null)}>Cancel Delete</Button>
+            <Button type="button" variant="danger" isLoading={deleting} disabled={deleting} onClick={handleDelete}>Delete Saved Result</Button></div>
+        </div>}
         <div className="table-responsive">
           <table className="medical-table">
             <thead>
               <tr>
-                <th style={{ width: '40px' }}>#</th>
+                <th style={{ width: '60px' }}>Print</th>
                 <th>Test Name</th>
                 <th>Result</th>
                 <th>Notes</th>
                 <th style={{ textAlign: 'right' }}>Price (EGP)</th>
                 <th style={{ width: '80px' }}>Date</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {results.map((r, i) => (
+              {results.map((r) => (
                 <tr key={r.id} className="table-row-hover">
                   <td>
-                    <span className="font-mono text-xs text-muted">{i + 1}</span>
+                    <input type="checkbox" aria-label={`Print ${r.analyticTypeName} ${r.createdAt || r.id}`} checked={selectedIds.includes(r.id)} disabled={deleting}
+                      onChange={() => setSelectedIds(previous => togglePrintResult(results, previous, r))} />
                   </td>
                   <td>
                     <span className="font-semibold text-sm text-main">{r.analyticTypeName}</span>
+                    <div className="text-xs text-muted">{latestIds.has(r.id) ? 'Latest result' : 'Older result'}</div>
                   </td>
                   <td>
                     <table className="medical-table">
@@ -140,18 +192,21 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
                     <span className="text-xs text-muted">{r.notes || '—'}</span>
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    <span className="font-mono font-bold text-sm">{r.price.toFixed(2)}</span>
+                    <span className="font-mono font-bold text-sm">{(resultPriceCents(r.price) / 100).toFixed(2)}</span>
                   </td>
                   <td>
                     <span className="text-xs text-muted">
                       {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}
                     </span>
                   </td>
+                  <td><button type="button" className="action-icon-btn text-danger" disabled={deleting}
+                    aria-label={`Delete saved result ${r.analyticTypeName} ${r.createdAt || r.id}`} title="Delete saved result" onClick={() => setDeletingResult(r)}><Icons.Trash2 size={17} /></button></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        </>
       )}
     </Modal>
   );
