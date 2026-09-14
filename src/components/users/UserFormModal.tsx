@@ -158,7 +158,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
       subtitle={
         editingStaff
           ? `Modifying credential record for ${editingStaff.name} (${editingStaff.staffId})`
-          : 'Register clinical personnel into the Bekheit LIMS directory.'
+          : 'Register clinical personnel into the Bakhet LIMS directory.'
       }
       footer={
         <div className="modal-footer-actions">
@@ -186,7 +186,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
         <div className="form-row-2">
           <Input
             label="Full Name & Clinical Credentials"
-            placeholder="e.g. Dr. Ahmed Bekheit, MD"
+            placeholder="e.g. Dr. Ahmed Bakhet, MD"
             value={formData.name}
             onChange={(e) => handleChange('name', e.target.value)}
             error={errors.name}
@@ -207,7 +207,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
           <Input
             label="Medical Staff Email"
             type="email"
-            placeholder="ahmed.bekheit@bekheitlab.com"
+            placeholder="ahmed.bakhet@bakhetlab.com"
             value={formData.email}
             onChange={(e) => handleChange('email', e.target.value)}
             error={errors.email}

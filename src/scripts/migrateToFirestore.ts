@@ -199,7 +199,7 @@ if (typeof window !== 'undefined') {
   w.checkMigrationStatus = checkMigrationStatus;
   w.migrateAnalyticTypes = migrateAnalyticTypesToFirestore;
 
-  console.log('🔥 Bekheit Lab Firestore Migration Suite Available:');
+  console.log('🔥 Bakhet Lab Firestore Migration Suite Available:');
   console.log('- migrateEverything(): Migrate patients, analytic types & staff in one click');
   console.log('- migrateToFirestore(): Migrate patients');
   console.log('- migrateAnalyticTypes(): Seed analytic types');

@@ -17,8 +17,8 @@ interface AuthContextType {
 const DEMO_ACCOUNTS: Record<UserRole, AuthUser> = {
   ADMIN: {
     id: 'staff-01',
-    name: 'Prof. Dr. Mohamed Bekheit',
-    email: 'mohamed.bekheit',
+    name: 'Prof. Dr. Mohamed Bakhet',
+    email: 'mohamed.bakhet',
     role: 'ADMIN',
     roleTitle: 'Consultant Pathologist & Lab Administrator',
     department: 'Histopathology & Cytology',
@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     // Check if matching any demo account or allow standard fallback demo login
-    if (emailClean.includes('admin') || credentials.password === 'bekheit2026' || emailClean === 'demo@bekheitlab.com' || emailClean === 'mohamed.bekheit') {
+    if (emailClean.includes('admin') || credentials.password === 'bakhet2026' || emailClean === 'demo@bakhetlab.com' || emailClean === 'mohamed.bakhet') {
       const demoUser = DEMO_ACCOUNTS.ADMIN;
       setUser(demoUser);
       StorageService.saveAuthSession(demoUser);

@@ -37,7 +37,7 @@ export const LoginPage: React.FC = () => {
 
     const ok = await login({ email, password, rememberMe });
     if (ok) {
-      success('Authentication Successful', 'Welcome to Bekheit Medical Laboratories LIMS portal.');
+      success('Authentication Successful', 'Welcome to Bakhet Medical Laboratories LIMS portal.');
     } else {
       toastError('Login Failed', 'Please verify your credentials or contact IT administration.');
     }
@@ -57,7 +57,7 @@ export const LoginPage: React.FC = () => {
               <Icons.Microscope size={28} className="text-white" />
             </div>
             <div>
-              <h1 className="brand-title">BEKHEIT</h1>
+              <h1 className="brand-title">Bakhet</h1>
               <span className="brand-subtitle">MEDICAL LABORATORIES</span>
             </div>
           </div>
@@ -78,7 +78,7 @@ export const LoginPage: React.FC = () => {
           </div>
 
           <div className="login-banner-footer">
-            <span>© 2026 Bekheit Medical Laboratories. All rights reserved.</span>
+            <span>© 2026 Bakhet Medical Laboratories. All rights reserved.</span>
           </div>
         </div>
 
@@ -87,7 +87,7 @@ export const LoginPage: React.FC = () => {
           <div className="login-form-header">
             <div className="mobile-brand-tag">
               <Icons.Microscope size={20} />
-              <span>BEKHEIT MEDICAL LAB</span>
+              <span>Bakhet MEDICAL LAB</span>
             </div>
             <h2 className="login-title">Staff Portal Sign In</h2>
             <p className="login-desc">Enter your laboratory credentials to access your diagnostic workbench.</p>
@@ -104,7 +104,7 @@ export const LoginPage: React.FC = () => {
             <Input
               label="username"
               id="staff-username"
-              placeholder="e.g. mohamed.bekheit"
+              placeholder="e.g. mohamed.bakhet"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               error={formErrors.email}

@@ -72,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Icons.Microscope size={22} className="text-white" />
           </div>
           <div className="sidebar-brand-text">
-            <h1 className="sidebar-brand-name">BEKHEIT LAB</h1>
+            <h1 className="sidebar-brand-name">BAKHET LAB</h1>
             <span className="sidebar-brand-tag">CLINICAL PATHOLOGY</span>
           </div>
         </div>

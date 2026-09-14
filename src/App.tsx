@@ -20,7 +20,7 @@ function AppContent() {
       <div className="login-page">
         <div className="flex items-center gap-3 text-white">
           <div className="btn-spinner" style={{ width: 28, height: 28 }} />
-          <span className="text-sm font-semibold">Initializing Bekheit LIMS Core...</span>
+          <span className="text-sm font-semibold">Initializing Bakhet LIMS Core...</span>
         </div>
       </div>
     );

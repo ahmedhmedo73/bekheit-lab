@@ -81,7 +81,7 @@ export function buildAnalyticReport(patient: Patient, results: AnalyticResult[])
 ${panels.map(result => {
   const children = result.children ?? [{ id: 'legacy', name: result.analyticTypeName, result: result.result, unit: '', referenceRange: '' }];
   return `<section class="report-page">
-    <header><h1 class="lab-name">BEKHEIT LAB</h1><p class="lab-subtitle">Clinical Pathology — Laboratory Report</p></header>
+    <header><h1 class="lab-name">BAKHET LAB</h1><p class="lab-subtitle">Clinical Pathology — Laboratory Report</p></header>
     <table class="patient-info" aria-label="Patient details"><tbody>
       <tr><th>Name</th><td dir="auto">${escapeHtml(patient.name)}</td><th>Patient ID</th><td>${escapeHtml(patient.patientId)}</td></tr>
       <tr><th>Sex</th><td>${escapeHtml(patient.gender || '—')}</td><th>Age</th><td>${escapeHtml(patient.age)} Y</td></tr>

@@ -23,7 +23,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
         <div className="welcome-meta">
           <div className="welcome-badge">
             <Icons.ShieldCheck size={14} className="text-teal" />
-            <span>Bekheit Clinical Laboratories • Central Branch LIMS</span>
+            <span>Bakhet Clinical Laboratories • Central Branch LIMS</span>
           </div>
           <h1 className="welcome-title">
             Welcome back, {user?.name || 'Doctor'}
