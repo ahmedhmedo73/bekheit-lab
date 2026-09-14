@@ -10,6 +10,7 @@ import {
   where,
   orderBy,
   writeBatch,
+  runTransaction,
   QueryDocumentSnapshot,
   DocumentSnapshot,
   type DocumentData,
@@ -17,7 +18,6 @@ import {
 import { db } from '../config/firebase';
 import { migrateAnalyticHierarchy } from '../scripts/migrateAnalyticHierarchy';
 import { typeMigration } from './analyticSchema';
-import { ANALYTIC_CATALOG } from '../data/analyticCatalog';
 import type { Patient, PatientFormData } from '../types/patient';
 import type { AnalyticType, AnalyticTypeFormData, AnalyticResult, AnalyticResultFormData } from '../types/analyticType';
 import type { MedicalStaff, StaffFormData, StaffFilterOptions } from '../types/user';
@@ -411,15 +411,16 @@ export const FirestoreService = {
   async migrateAnalyticTypes(types: AnalyticType[]) {
     if (!db) throw new Error('Firestore is not initialized');
     try {
-      const ref = collection(db, ANALYTIC_TYPES_COLLECTION);
-      const batch = types.map(async (t) => {
-        const template = ANALYTIC_CATALOG.find(item => item.legacyName === t.name);
-        const data = { ...t, ...typeMigration(t),
-          ...(template ? { name: template.name, children: template.children, catalogExampleVersion: 1 } : {}),
-          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-        return addDoc(ref, data);
+      const database = db;
+      await runTransaction(database, async transaction => {
+        const refs = types.map(type => doc(database, ANALYTIC_TYPES_COLLECTION, type.id));
+        const snapshots = await Promise.all(refs.map(ref => transaction.get(ref)));
+        for (let index = 0; index < types.length; index++) {
+          if (snapshots[index].exists()) continue;
+          const type = types[index];
+          transaction.set(refs[index], { ...type, ...typeMigration(type), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+        }
       });
-      await Promise.all(batch);
       return { success: true, count: types.length };
     } catch (error) {
       console.error('Error migrating analytic types:', error);

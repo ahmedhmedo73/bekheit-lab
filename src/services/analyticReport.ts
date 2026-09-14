@@ -1,5 +1,5 @@
 import type { Patient } from '../types/patient';
-import type { AnalyticResult } from '../types/analyticType';
+import type { AnalyticResult, ChildAnalyticResult } from '../types/analyticType';
 
 const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
 
@@ -16,6 +16,29 @@ function formatDate(value?: string): string {
   if (!value) return '—';
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('en-GB', { timeZone: 'Africa/Cairo' });
+}
+
+function renderResultTables(children: ChildAnalyticResult[], panelName: string): string {
+  const groups: { name: string; differential: boolean; children: ChildAnalyticResult[] }[] = [];
+  for (const child of children) {
+    const name = child.section || panelName;
+    const differential = child.resultType === 'differential';
+    const last = groups[groups.length - 1];
+    if (last && last.name === name && last.differential === differential) last.children.push(child);
+    else groups.push({ name, differential, children: [child] });
+  }
+  return groups.map(group => {
+    if (group.differential) return `<table class="results differential" aria-label="${escapeHtml(group.name)}">
+      <colgroup><col style="width:32%"><col style="width:14%"><col style="width:18%"><col style="width:16%"><col style="width:20%"></colgroup>
+      <thead><tr class="section-heading"><th colspan="5">${escapeHtml(group.name)}</th></tr>
+      <tr><th rowspan="2">Test</th><th colspan="2">Relative Count</th><th colspan="2">Absolute Count</th></tr>
+      <tr><th>Result</th><th>Ref. Range</th><th>Result</th><th>Ref. Range</th></tr></thead>
+      <tbody>${group.children.map(child => `<tr><td class="test-name">${escapeHtml(child.name)}</td><td class="value">${escapeHtml(child.result)} ${escapeHtml(child.unit)}</td><td class="range">${escapeHtml(child.referenceRange || '—')}</td><td class="value">${child.absoluteEnabled ? `${escapeHtml(child.absoluteResult || '—')} ${escapeHtml(child.absoluteUnit || '')}` : '—'}</td><td class="range">${child.absoluteEnabled ? escapeHtml(child.absoluteReferenceRange || '—') : '—'}</td></tr>`).join('')}</tbody></table>`;
+    return `<table class="results" aria-label="${escapeHtml(group.name)} results">
+      <colgroup><col style="width:36%"><col style="width:3%"><col style="width:17%"><col style="width:15%"><col style="width:29%"></colgroup>
+      <thead><tr><th>Test</th><th></th><th>Result</th><th>Unit</th><th>Reference Range</th></tr><tr class="section-heading"><th colspan="5">${escapeHtml(group.name)}</th></tr></thead>
+      <tbody>${group.children.map(child => `<tr><td class="test-name">${escapeHtml(child.name)}</td><td class="separator">:</td><td class="value">${escapeHtml(child.result)}</td><td>${escapeHtml(child.unit || '—')}</td><td class="range">${escapeHtml(child.referenceRange || '—')}</td></tr>`).join('')}</tbody></table>`;
+  }).join('');
 }
 
 export function buildAnalyticReport(patient: Patient, results: AnalyticResult[]): string {
@@ -43,6 +66,11 @@ export function buildAnalyticReport(patient: Patient, results: AnalyticResult[])
   .results .test-name, .results .value { font-weight: bold; }
   .results .separator { text-align: center; }
   .results .range { font-size: 8pt; line-height: 1.35; }
+  .results { margin-bottom: 4mm; }
+  .results th { padding-bottom: 2mm; }
+  .results .section-heading th { padding-top: 2mm; text-decoration: underline; font-size: 10pt; }
+  .differential { border-top: 0.7pt solid #000; }
+  .differential th:not(:first-child) { text-align: center; }
   thead { display: table-header-group; }
   tr { break-inside: avoid; }
   .notes { font-size: 9pt; white-space: pre-wrap; margin: 5mm 1.5mm; overflow-wrap: anywhere; }
@@ -61,12 +89,8 @@ ${panels.map(result => {
       <tr><th>Phone</th><td>${escapeHtml(patient.phone || '—')}</td><th>Reporting Date</th><td>${escapeHtml(formatDate(result.createdAt))}</td></tr>
     </tbody></table>
     <h2 class="panel-title">${escapeHtml(result.analyticTypeName)}</h2>
-    <table class="results" aria-label="${escapeHtml(result.analyticTypeName)} results">
-      <colgroup><col style="width:36%"><col style="width:3%"><col style="width:17%"><col style="width:15%"><col style="width:29%"></colgroup>
-      <thead><tr><th>Test</th><th></th><th>Result</th><th>Unit</th><th>Reference Range</th></tr></thead>
-      <tbody><tr class="group"><td colspan="5">${escapeHtml(result.analyticTypeName)}:</td></tr>
-      ${children.map(child => `<tr><td class="test-name">${escapeHtml(child.name)}</td><td class="separator">:</td><td class="value">${escapeHtml(child.result)}</td><td>${escapeHtml(child.unit || '—')}</td><td class="range">${escapeHtml(child.referenceRange || '—')}</td></tr>`).join('')}
-      </tbody></table>
+    ${renderResultTables(children, result.analyticTypeName)}
+    ${result.generalComment ? `<p class="notes"><strong>General Comment:</strong> ${escapeHtml(result.generalComment)}</p>` : ''}
     ${result.notes ? `<p class="notes"><strong>Notes:</strong> ${escapeHtml(result.notes)}</p>` : ''}
     <hr class="rule"><footer class="signatures"><span>Lab Manager</span><span>Signature</span></footer>
   </section>`;

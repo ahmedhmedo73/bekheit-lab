@@ -1,27 +1,42 @@
-# Analytic panels and Firestore migration
+# Analytic catalog and reports
 
-Each `analyticTypes` document is a parent panel with its existing name and price, plus `children: [{ id, name, unit, referenceRange }]` and `schemaVersion: 2`. Child IDs stay stable during editing. Price is charged once per parent panel.
+## Active catalog: analytics.pdf
 
-Each `analyticResults` document retains the parent ID/name and price and stores child snapshots with their result values. Catalog changes and deletions do not rewrite historical results. Selected panels are saved in one atomic batch.
+The catalog was replaced from the user's eight-page PDF on 2026-09-14. `src/data/analyticCatalog.ts` contains only test definitions, not patient identities, measured values, or diagnostic comments.
 
-Existing documents are migrated in place, retaining their Firestore IDs, original fields and timestamps. An old flat type gets one child with the same name; an old result gets one child containing its exact original text. Unknown units and reference ranges remain blank. Edit the catalog to define the lab's child tests and ranges; historical free text is never automatically split into clinical measurements.
+| PDF page | Report group | Tests |
+| --- | --- | ---: |
+| 1 | Clinical Chemistry Report | 2 |
+| 2 | Hormones Report | 2 |
+| 3 | Urine Analysis Report | 17 |
+| 4 | Stool Analysis Report | 16 |
+| 5 | Urine Culture & Sensitivity | 6 |
+| 6 | Complete Blood Picture | 16 |
+| 7 | H. Pylori Ag in Stool (Qualitative) | 1 |
+| 8 | Kidney Functions | 3 |
 
-The app checks the migration before catalog/result reads. It uses server reads and transactions, skips version 2 documents, and retries after failures. It requires Firestore read/update access to `analyticTypes` and `analyticResults`; no collections or indexes are added.
+Each parent represents one report page/group and has an ordered array of children. `section` preserves headings such as Physical Examination, Culture, and CBC. Supported `resultType` values are numeric, text, qualitative, range, and differential. Numeric fields allow qualified values such as `<10,000`; qualitative fields suggest choices and allow custom text. Missing units and ranges remain blank. Suggested choices are UI aids, not prefilled findings.
 
-With Node 24 and the project's `.env`:
+Differential children store the relative unit/range in `unit` and `referenceRange`. `absoluteEnabled`, `absoluteUnit`, and `absoluteReferenceRange` configure the second measurement. In the PDF, Segmented and Bands have relative results only; the other five differential rows support both. Absolute values are entered independently, never inferred from the WBC result. The PDF does not specify an absolute-count unit.
+
+Reference data is copied from the supplied report, not independently validated for every patient population. The source prints `fl` for urine specific gravity and `0 - 2` as the absolute basophil range; those unusual entries are preserved for lab review. Prices start at 0 EGP because the PDF contains no prices. No antibiotics/susceptibility table is present on its culture page; no antibiotic results are invented.
+
+`generalComment` on a catalog parent is an optional template. It is copied into an editable per-patient report comment and saved on the result document. The PDF's patient-specific normal-blood-picture comment is deliberately not a default.
+
+## Results and printing
+
+Results snapshot the entire child definition plus `result` and, where enabled, `absoluteResult`. Updating or replacing the catalog does not change historical patient reports. Saving all selected panels uses one Firestore batch. Required absolute counts are validated separately. Group comments retain line breaks and print below their group's tests. Printing uses the latest saved result for each parent ID and omits previous-result comparison sections. Existing notes and legacy flat results remain readable.
+
+## Firestore replacement
 
 ```sh
-node scripts/migrate-analytic-hierarchy.mjs          # dry run
-node scripts/migrate-analytic-hierarchy.mjs --apply  # migrate
-node --test scripts/analytic-schema.test.mjs
+node scripts/replace-catalog-from-pdf.mjs          # preview
+node scripts/replace-catalog-from-pdf.mjs --apply  # back up and replace
+node --test scripts/analytic-schema.test.mjs scripts/analytic-values.test.mjs scripts/analytic-report.test.mjs
 ```
 
-Applied to project `bekheit-lab` on 2026-09-14: 15 analytic types and 6 results. A subsequent server dry run reported zero pending documents in both collections.
+Uses the project `.env` and Node 24. Before mutation it backs up the complete catalog under ignored `backups/`, checks for concurrent edits, and atomically deletes old catalog entries and inserts the eight deterministic PDF IDs. It skips a successfully installed PDF catalog to preserve later edits. It never writes to patients or analyticResults, and compares result-document fingerprints before and after replacement.
 
-## Meaningful catalog examples
+Completed replacement: 15 old entries replaced by 8 report groups / 63 children. All 7 existing patient result documents verified unchanged. Backup: `backups/analytic-types-before-pdf-1789416976915.json`.
 
-`src/data/analyticCatalog.ts` defines 15 panels and 38 child tests. Each range is explicitly labeled as a published adult example requiring lab review. Individual source URLs are saved with the children and linked from the catalog. Lab staff can edit the ranges and units to match their assays. These are not pediatric or pregnancy reference intervals or patient-specific treatment targets.
-
-Sources: [ABIM January 2026](https://www.abim.org/media/e2wdwdqu/laboratory-reference-ranges.pdf), [Oxford University Hospitals urea](https://www.ouh.nhs.uk/biochemistry/tests/tests-catalogue/urea/), [UCSF urinalysis](https://prod.ucsfhealth.org/care/medical-tests/urinalysis), [Mayo PT/INR](https://www.mayoclinic.org/tests-procedures/prothrombin-time/about/pac-20384661), [Mayo vitamin D](https://www.mayocliniclabs.com/test-catalog/Overview/83670), and [Mayo Access hsTnI](https://prd1.mayocliniclabs.com/test-catalog/overview/614422).
-
-`node scripts/populate-analytic-catalog.mjs` previews the update; `--apply` applies it. It updates only migrated legacy placeholders, retains document IDs and prices, preserves patient results, and skips previously populated or customized panels. Fresh catalog seeding also uses these child definitions.
+Fresh-app seeding uses the same PDF catalog with deterministic IDs and does not overwrite existing records. The earlier in-place hierarchy migration remains for legacy flat records, preserving their IDs, original result text, prices and timestamps.

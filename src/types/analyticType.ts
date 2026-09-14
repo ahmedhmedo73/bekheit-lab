@@ -4,10 +4,17 @@ export interface ChildAnalytic {
   unit: string;
   referenceRange: string;
   referenceSource?: string;
+  section?: string;
+  resultType?: 'numeric' | 'text' | 'qualitative' | 'range' | 'differential';
+  options?: string[];
+  absoluteEnabled?: boolean;
+  absoluteUnit?: string;
+  absoluteReferenceRange?: string;
 }
 
 export interface ChildAnalyticResult extends ChildAnalytic {
   result: string;
+  absoluteResult?: string;
 }
 
 export interface AnalyticType {
@@ -16,6 +23,8 @@ export interface AnalyticType {
   price: number;
   children?: ChildAnalytic[];
   schemaVersion?: number;
+  generalComment?: string;
+  sourcePage?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -32,6 +41,7 @@ export interface AnalyticResult {
   children?: ChildAnalyticResult[];
   schemaVersion?: number;
   notes?: string;
+  generalComment?: string;
   createdAt?: string;
 }
 

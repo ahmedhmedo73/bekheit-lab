@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { AnalyticType, AnalyticTypeFormData } from '../../types/analyticType';
+import type { AnalyticType, AnalyticTypeFormData, ChildAnalytic } from '../../types/analyticType';
 import { Modal } from '../common/Modal';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
@@ -34,6 +34,7 @@ export const AnalyticTypeFormModal: React.FC<AnalyticTypeFormModalProps> = ({
         name: editingType.name,
         price: editingType.price,
         children: analyticChildren(editingType),
+        generalComment: editingType.generalComment ?? '',
       });
     } else {
       setFormData({ name: '', price: 0, children: [] });
@@ -60,11 +61,16 @@ export const AnalyticTypeFormModal: React.FC<AnalyticTypeFormModalProps> = ({
     const names = new Set<string>();
     formData.children?.forEach((child) => {
       if (!child.name.trim()) newErrors.children = 'Every child needs a name.';
-      if (names.has(child.name.trim().toLowerCase())) newErrors.children = 'Child names must be unique within this parent.';
-      names.add(child.name.trim().toLowerCase());
+      const key = `${child.section?.trim().toLowerCase() ?? ''}:${child.name.trim().toLowerCase()}`;
+      if (names.has(key)) newErrors.children = 'Child names must be unique within each section.';
+      names.add(key);
     });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const updateChild = (id: string, updates: Partial<ChildAnalytic>) => {
+    setFormData(prev => ({ ...prev, children: prev.children?.map(child => child.id === id ? { ...child, ...updates } : child) }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -142,16 +148,43 @@ export const AnalyticTypeFormModal: React.FC<AnalyticTypeFormModalProps> = ({
           />
         </div>
         <div className="form-section-title">Child Analytics</div>
+        <label htmlFor="panel-general-comment">General Comment / Page Comment Template</label>
+        <textarea className="form-input" id="panel-general-comment" rows={3} value={formData.generalComment ?? ''}
+          placeholder="Optional editable comment for this report group. Leave patient-specific findings blank."
+          onChange={event => handleChange('generalComment', event.target.value)} />
         <p className="text-xs text-muted">Set the lab's unit and reference range for each child. Leave unknown values blank.</p>
         {formData.children?.map((child, index) => (
           <fieldset key={child.id} style={{ border: '1px solid var(--border-color)', borderRadius: 8, padding: 12 }}>
             <legend>Child {index + 1}</legend>
-            {(['name', 'unit', 'referenceRange'] as const).map(field => (
-              <Input key={field} id={`child-${child.id}-${field}`} label={field === 'referenceRange' ? 'Reference Range' : field === 'unit' ? 'Unit' : 'Child Name'}
+            <Input id={`section-${child.id}`} label="Section / Subgroup" value={child.section ?? ''} onChange={event => updateChild(child.id, { section: event.target.value })} />
+            <label htmlFor={`format-${child.id}`}>Result Format</label>
+            <select className="form-input" id={`format-${child.id}`} value={child.resultType ?? 'text'} onChange={event => updateChild(child.id, { resultType: event.target.value as ChildAnalytic['resultType'] })}>
+              <option value="numeric">Numeric measurement</option><option value="text">Descriptive / multiline text</option>
+              <option value="qualitative">Qualitative / suggested choices</option><option value="range">Microscopy range (e.g. 1 - 3)</option>
+              <option value="differential">Relative / absolute differential count</option>
+            </select>
+            {(['name', 'unit'] as const).map(field => (
+              <Input key={field} id={`child-${child.id}-${field}`} label={field === 'unit' ? 'Unit' : 'Child Name'}
                 placeholder={field === 'name' ? 'e.g. Urea Serum' : field === 'unit' ? 'Lab unit' : 'Lab reference range'}
                 value={child[field]} required={field === 'name'}
                 onChange={event => setFormData(prev => ({ ...prev, children: prev.children?.map(item => item.id === child.id ? { ...item, [field]: event.target.value } : item) }))} />
             ))}
+            <label htmlFor={`reference-${child.id}`}>{child.resultType === 'differential' ? 'Relative Reference Range' : 'Reference Range / Interpretation'}</label>
+            <textarea className="form-input" id={`reference-${child.id}`} rows={3} style={{ width: '100%' }} value={child.referenceRange} onChange={event => updateChild(child.id, { referenceRange: event.target.value })} />
+            {child.resultType === 'qualitative' && <Input id={`options-${child.id}`} label="Suggested Choices (comma separated)" value={child.options?.join(', ') ?? ''}
+              onChange={event => updateChild(child.id, { options: event.target.value.split(',').map(value => value.trim()) })} />}
+            {child.resultType === 'differential' && <>
+              <p className="text-xs text-muted">The unit and reference range above apply to the relative count.</p>
+              <label><input type="checkbox" checked={child.absoluteEnabled ?? false} onChange={event => updateChild(child.id, { absoluteEnabled: event.target.checked })} /> Include absolute count</label>
+              {child.absoluteEnabled && <>
+                <Input id={`absolute-unit-${child.id}`} label="Absolute Count Unit" value={child.absoluteUnit ?? ''} onChange={event => updateChild(child.id, { absoluteUnit: event.target.value })} />
+                <Input id={`absolute-reference-${child.id}`} label="Absolute Reference Range" value={child.absoluteReferenceRange ?? ''} onChange={event => updateChild(child.id, { absoluteReferenceRange: event.target.value })} />
+              </>}
+            </>}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button type="button" variant="outline" disabled={index === 0} onClick={() => setFormData(prev => { const children = [...(prev.children ?? [])]; [children[index - 1], children[index]] = [children[index], children[index - 1]]; return { ...prev, children }; })}>Move Up</Button>
+              <Button type="button" variant="outline" disabled={index === (formData.children?.length ?? 0) - 1} onClick={() => setFormData(prev => { const children = [...(prev.children ?? [])]; [children[index], children[index + 1]] = [children[index + 1], children[index]]; return { ...prev, children }; })}>Move Down</Button>
+            </div>
             <Button type="button" variant="outline" onClick={() => setFormData(prev => ({ ...prev, children: prev.children?.filter(item => item.id !== child.id) }))}>Remove Child</Button>
           </fieldset>
         ))}

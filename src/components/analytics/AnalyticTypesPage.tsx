@@ -277,11 +277,14 @@ export const AnalyticTypesPage: React.FC = () => {
                           <table className="medical-table" style={{ marginTop: 8 }}>
                             <thead><tr><th>Child Analytic</th><th>Unit</th><th>Reference Range</th></tr></thead>
                             <tbody>{analyticChildren(type).map(child => (
-                              <tr key={child.id}><td>{child.name}</td><td>{child.unit || 'Not specified'}</td><td style={{ whiteSpace: 'normal', minWidth: 200, maxWidth: 360 }}>{child.referenceRange || 'Not specified'}
+                              <tr key={child.id}><td><small>{child.section}</small><div>{child.name}</div><small>{child.resultType || 'text'}</small></td><td>{child.unit || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteUnit || 'Not specified'}</div>}</td><td style={{ whiteSpace: 'pre-wrap', minWidth: 200, maxWidth: 360 }}>{child.resultType === 'differential' ? 'Relative: ' : ''}{child.referenceRange || 'Not specified'}
+                                {child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteReferenceRange || 'Not specified'}</div>}
+                                {child.referenceSource && !child.referenceSource.startsWith('https://') && <div className="text-xs text-muted">{child.referenceSource}</div>}
                                 {child.referenceSource?.startsWith('https://') && <div><a href={child.referenceSource} target="_blank" rel="noreferrer">Published source</a></div>}
                               </td></tr>
                             ))}</tbody>
                           </table>
+                          {type.generalComment && <p style={{ whiteSpace: 'pre-wrap' }}>General Comment: {type.generalComment}</p>}
                         </div>
                       </div>
                     </td>

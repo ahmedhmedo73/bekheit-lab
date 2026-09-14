@@ -6,7 +6,8 @@ import { AnalyticTypeService } from '../../services/analyticTypeService';
 import { AnalyticResultService } from '../../services/analyticResultService';
 import { useToast } from '../../context/ToastContext';
 import { Modal } from '../common/Modal';
-import { Input } from '../common/Input';
+import { AnalyticValueInput } from './AnalyticValueInput';
+import { emptyAnalyticResult, isAnalyticResultComplete } from '../../services/analyticValues';
 import { Button } from '../common/Button';
 import { Icons } from '../common/Icons';
 
@@ -24,6 +25,7 @@ interface ResultEntry {
   result: string;
   children: ChildAnalyticResult[];
   notes: string;
+  generalComment: string;
 }
 
 export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
@@ -36,13 +38,19 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
   const [analyticTypes, setAnalyticTypes] = useState<AnalyticType[]>([]);
   const [entries, setEntries] = useState<ResultEntry[]>([]);
   const [saving, setSaving] = useState(false);
+  const [loadingTypes, setLoadingTypes] = useState(false);
 
   useEffect(() => {
+    let active = true;
     if (isOpen) {
+      setLoadingTypes(true);
       setAnalyticTypes([]);
-      AnalyticTypeService.getAll().then(setAnalyticTypes).catch(() => toastError('Catalog Failed', 'Could not load or migrate analytic types. Reopen this dialog to retry.'));
+      AnalyticTypeService.getAll().then(types => { if (active) setAnalyticTypes(types); })
+        .catch(() => { if (active) toastError('Catalog Failed', 'Could not load or migrate analytic types. Reopen this dialog to retry.'); })
+        .finally(() => { if (active) setLoadingTypes(false); });
       setEntries([]);
     }
+    return () => { active = false; };
   }, [isOpen, toastError]);
 
   const addEntry = (type: AnalyticType) => {
@@ -55,8 +63,9 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
         analyticTypeName: type.name,
         price: type.price,
         result: '',
-        children: analyticChildren(type).map(child => ({ ...child, result: '' })),
+        children: analyticChildren(type).map(emptyAnalyticResult),
         notes: '',
+        generalComment: type.generalComment ?? '',
       },
     ]);
   };
@@ -65,7 +74,7 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
     setEntries((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const updateEntry = (idx: number, field: 'result' | 'notes', value: string) => {
+  const updateEntry = (idx: number, field: 'result' | 'notes' | 'generalComment', value: string) => {
     setEntries((prev) =>
       prev.map((e, i) => (i === idx ? { ...e, [field]: value } : e))
     );
@@ -81,7 +90,7 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
       return;
     }
 
-    const emptyResults = entries.filter((e) => !e.children.length || e.children.some(child => !child.result.trim()));
+    const emptyResults = entries.filter((e) => !e.children.length || e.children.some(child => !isAnalyticResultComplete(child)));
     if (emptyResults.length > 0) {
       toastError(
         'Missing Results',
@@ -102,6 +111,7 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
           children: entry.children.map(child => ({ ...child, result: child.result.trim() })),
           schemaVersion: 2,
           notes: entry.notes?.trim() || '',
+          generalComment: entry.generalComment.trim(),
         };
         return data;
       });
@@ -154,7 +164,7 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
             variant="medical"
             onClick={handleSubmit}
             isLoading={saving}
-            disabled={saving}
+            disabled={saving || loadingTypes}
             leftIcon={<Icons.Check size={16} />}
           >
             Save Results ({entries.length})
@@ -177,7 +187,8 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
             marginBottom: '1rem',
           }}
         >
-          {availableTypes.length === 0 && entries.length === 0 && (
+          {loadingTypes && <p className="text-xs text-muted" role="status">Loading analytic groups...</p>}
+          {!loadingTypes && availableTypes.length === 0 && entries.length === 0 && (
             <p className="text-xs text-muted">
               No analytic types available. Please add types in the Analytic Types catalog first.
             </p>
@@ -250,23 +261,20 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
                   </div>
                   <div className="form-row-2">
                     <div>
-                      {entry.children.map(child => (
+                      {entry.children.map((child, childIndex) => (
                         <div key={child.id} style={{ marginBottom: 12 }}>
-                          <Input id={`result-${entry.analyticTypeId}-${child.id}`} label={child.name} placeholder="Result value" value={child.result} required disabled={saving}
-                            onChange={event => setEntries(prev => prev.map((item, i) => i === idx ? { ...item, children: item.children.map(test => test.id === child.id ? { ...test, result: event.target.value } : test) } : item))} />
-                          <p className="text-xs text-muted">Unit: {child.unit || 'Not specified'} | Reference range: {child.referenceRange || 'Not specified'}</p>
+                          {child.section && (childIndex === 0 || entry.children[childIndex - 1].section !== child.section) && <h4 className="form-section-title">{child.section}</h4>}
+                          <AnalyticValueInput child={child} prefix={`result-${entry.analyticTypeId}`} disabled={saving}
+                            onChange={updates => setEntries(prev => prev.map((item, i) => i === idx ? { ...item, children: item.children.map(test => test.id === child.id ? { ...test, ...updates } : test) } : item))} />
                         </div>
                       ))}
                     </div>
-                    <Input
-                      label="Notes (optional)"
-                      id={`notes-${entry.analyticTypeId}`}
-                      disabled={saving}
-                      placeholder="e.g. Slightly elevated"
-                      value={entry.notes}
-                      onChange={(e) => updateEntry(idx, 'notes', e.target.value)}
-                      leftIcon={<Icons.FileText size={14} />}
-                    />
+                    <div>
+                      <label htmlFor={`comment-${entry.analyticTypeId}`}>General Comment for This Page / Group</label>
+                      <textarea className="form-input" id={`comment-${entry.analyticTypeId}`} rows={5} style={{ width: '100%' }} disabled={saving}
+                        placeholder="Enter a comment for this patient's report group" value={entry.generalComment}
+                        onChange={event => updateEntry(idx, 'generalComment', event.target.value)} />
+                    </div>
                   </div>
                 </div>
               ))}

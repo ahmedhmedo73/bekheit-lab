@@ -27,15 +27,20 @@ test('existing child definitions and result snapshots remain untouched', () => {
   assert.deepEqual(resultMigration({ analyticTypeName: 'Kidney', children }).children, children);
 });
 
-test('catalog examples have complete, sourced metadata and unique child IDs', () => {
-  assert.equal(ANALYTIC_CATALOG.length, 15);
-  assert.equal(ANALYTIC_CATALOG.reduce((sum, panel) => sum + panel.children.length, 0), 38);
+test('PDF catalog contains every page and has unique child IDs without patient results', () => {
+  assert.equal(ANALYTIC_CATALOG.length, 8);
+  assert.equal(ANALYTIC_CATALOG.reduce((sum, panel) => sum + panel.children.length, 0), 63);
+  assert.deepEqual(ANALYTIC_CATALOG.map(panel => panel.sourcePage), [1, 2, 3, 4, 5, 6, 7, 8]);
   for (const panel of ANALYTIC_CATALOG) {
     assert.equal(new Set(panel.children.map(child => child.id)).size, panel.children.length);
     for (const child of panel.children) {
-      assert.ok(child.name && child.unit);
-      assert.ok(child.referenceRange.includes('Published adult example; lab review required'));
-      assert.ok(child.referenceSource.startsWith('https://'));
+      assert.ok(child.name && child.section && child.resultType);
+      assert.equal(typeof child.unit, 'string');
+      assert.equal(typeof child.referenceRange, 'string');
+      assert.equal(child.referenceSource, `analytics.pdf, page ${panel.sourcePage}`);
+      assert.equal('result' in child, false);
     }
+    assert.equal(panel.generalComment, '');
+    assert.equal(panel.price, 0);
   }
 });

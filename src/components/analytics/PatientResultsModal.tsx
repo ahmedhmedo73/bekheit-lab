@@ -131,11 +131,12 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
                     <table className="medical-table">
                       <thead><tr><th>Child Analytic</th><th>Value</th><th>Unit</th><th>Reference Range</th></tr></thead>
                       <tbody>{resultMigration(r).children.map(child => (
-                        <tr key={child.id}><td>{child.name}</td><td>{child.result}</td><td>{child.unit || 'Not specified'}</td><td>{child.referenceRange || 'Not specified'}</td></tr>
+                        <tr key={child.id}><td><small>{child.section}</small><div>{child.name}</div></td><td style={{ whiteSpace: 'pre-wrap' }}>{child.resultType === 'differential' ? 'Relative: ' : ''}{child.result}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteResult}</div>}</td><td>{child.unit || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteUnit || 'Not specified'}</div>}</td><td style={{ whiteSpace: 'pre-wrap' }}>{child.referenceRange || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteReferenceRange || 'Not specified'}</div>}</td></tr>
                       ))}</tbody>
                     </table>
                   </td>
                   <td>
+                    {r.generalComment && <p style={{ whiteSpace: 'pre-wrap' }}><strong>General Comment:</strong> {r.generalComment}</p>}
                     <span className="text-xs text-muted">{r.notes || '—'}</span>
                   </td>
                   <td style={{ textAlign: 'right' }}>
