@@ -1,3 +1,4 @@
+import { flaggedResult } from './resultFlag.ts';
 import type { Patient } from '../types/patient';
 import type { AnalyticResult, ChildAnalyticResult } from '../types/analyticType';
 
@@ -18,7 +19,7 @@ function formatDate(value?: string): string {
   return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('en-GB', { timeZone: 'Africa/Cairo' });
 }
 
-function renderResultTables(children: ChildAnalyticResult[], panelName: string): string {
+function renderResultTables(children: ChildAnalyticResult[], panelName: string, gender?: string): string {
   const groups: { name: string; differential: boolean; children: ChildAnalyticResult[] }[] = [];
   for (const child of children) {
     const name = child.section || panelName;
@@ -33,11 +34,11 @@ function renderResultTables(children: ChildAnalyticResult[], panelName: string):
       <thead><tr class="section-heading"><th colspan="5">${escapeHtml(group.name)}</th></tr>
       <tr><th rowspan="2">Test</th><th colspan="2">Relative Count</th><th colspan="2">Absolute Count</th></tr>
       <tr><th>Result</th><th>Ref. Range</th><th>Result</th><th>Ref. Range</th></tr></thead>
-      <tbody>${group.children.map(child => `<tr><td class="test-name">${escapeHtml(child.name)}</td><td class="value">${escapeHtml(child.result)} ${escapeHtml(child.unit)}</td><td class="range">${escapeHtml(child.referenceRange || '—')}</td><td class="value">${child.absoluteEnabled ? `${escapeHtml(child.absoluteResult || '—')} ${escapeHtml(child.absoluteUnit || '')}` : '—'}</td><td class="range">${child.absoluteEnabled ? escapeHtml(child.absoluteReferenceRange || '—') : '—'}</td></tr>`).join('')}</tbody></table>`;
+      <tbody>${group.children.map(child => `<tr><td class="test-name">${escapeHtml(child.name)}</td><td class="value">${escapeHtml(flaggedResult(child.result, child.referenceRange, gender))} ${escapeHtml(child.unit)}</td><td class="range">${escapeHtml(child.referenceRange || '—')}</td><td class="value">${child.absoluteEnabled ? `${escapeHtml(flaggedResult(child.absoluteResult, child.absoluteReferenceRange, gender) || '—')} ${escapeHtml(child.absoluteUnit || '')}` : '—'}</td><td class="range">${child.absoluteEnabled ? escapeHtml(child.absoluteReferenceRange || '—') : '—'}</td></tr>`).join('')}</tbody></table>`;
     return `<table class="results" aria-label="${escapeHtml(group.name)} results">
       <colgroup><col style="width:36%"><col style="width:3%"><col style="width:17%"><col style="width:15%"><col style="width:29%"></colgroup>
       <thead><tr><th>Test</th><th></th><th>Result</th><th>Unit</th><th>Reference Range</th></tr><tr class="section-heading"><th colspan="5">${escapeHtml(group.name)}</th></tr></thead>
-      <tbody>${group.children.map(child => `<tr><td class="test-name">${escapeHtml(child.name)}</td><td class="separator">:</td><td class="value">${escapeHtml(child.result)}</td><td>${escapeHtml(child.unit || '—')}</td><td class="range">${escapeHtml(child.referenceRange || '—')}</td></tr>`).join('')}</tbody></table>`;
+      <tbody>${group.children.map(child => `<tr><td class="test-name">${escapeHtml(child.name)}</td><td class="separator">:</td><td class="value">${escapeHtml(flaggedResult(child.result, child.referenceRange, gender))}</td><td>${escapeHtml(child.unit || '—')}</td><td class="range">${escapeHtml(child.referenceRange || '—')}</td></tr>`).join('')}</tbody></table>`;
   }).join('');
 }
 
@@ -81,7 +82,7 @@ export function buildAnalyticReport(patient: Patient, results: AnalyticResult[])
 ${panels.map(result => {
   const children = result.children ?? [{ id: 'legacy', name: result.analyticTypeName, result: result.result, unit: '', referenceRange: '' }];
   return `<section class="report-page">
-    <header><h1 class="lab-name">BAKHET LAB</h1><p class="lab-subtitle">Clinical Pathology — Laboratory Report</p></header>
+    <header><p class="lab-subtitle">Clinical Pathology — Laboratory Report</p></header>
     <table class="patient-info" aria-label="Patient details"><tbody>
       <tr><th>Name</th><td dir="auto">${escapeHtml(patient.name)}</td><th>Patient ID</th><td>${escapeHtml(patient.patientId)}</td></tr>
       <tr><th>Sex</th><td>${escapeHtml(patient.gender || '—')}</td><th>Age</th><td>${escapeHtml(patient.age)} Y</td></tr>
@@ -89,7 +90,7 @@ ${panels.map(result => {
       <tr><th>Phone</th><td>${escapeHtml(patient.phone || '—')}</td><th>Reporting Date</th><td>${escapeHtml(formatDate(result.createdAt))}</td></tr>
     </tbody></table>
     <h2 class="panel-title">${escapeHtml(result.analyticTypeName)}</h2>
-    ${renderResultTables(children, result.analyticTypeName)}
+    ${renderResultTables(children, result.analyticTypeName, patient.gender)}
     ${result.generalComment ? `<p class="notes"><strong>General Comment:</strong> ${escapeHtml(result.generalComment)}</p>` : ''}
     ${result.notes ? `<p class="notes"><strong>Notes:</strong> ${escapeHtml(result.notes)}</p>` : ''}
     <hr class="rule"><footer class="signatures"><span>Lab Manager</span><span>Signature</span></footer>

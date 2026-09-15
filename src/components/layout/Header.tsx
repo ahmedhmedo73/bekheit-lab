@@ -54,6 +54,8 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeView }) =
         return 'Patients';
       case 'analytics':
         return 'Analytic Types';
+      case 'results':
+        return 'Lab Visits';
       case 'users':
         return 'Medical Staff';
       default:
@@ -87,7 +89,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeView }) =
         </div>
 
         {/* Notifications Dropdown */}
-        <div className={`dropdown-wrapper ${showNotifications ? 'show-dropdown' : ''}`} ref={notifRef}>
+        {/* <div className={`dropdown-wrapper ${showNotifications ? 'show-dropdown' : ''}`} ref={notifRef}>
           <button
             type="button"
             className="icon-action-btn"
@@ -152,7 +154,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeView }) =
               </div>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* User Profile & Session Dropdown */}
         {user && (

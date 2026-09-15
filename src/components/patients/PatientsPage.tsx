@@ -5,21 +5,11 @@ import { useToast } from '../../context/ToastContext';
 import { Icons } from '../common/Icons';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
-import { Select } from '../common/Select';
 import { Card } from '../common/Card';
 import { PatientFormModal } from './PatientFormModal';
 import { PatientDetailsModal } from './PatientDetailsModal';
 import { DeletePatientModal } from './DeletePatientModal';
-import { AddAnalyticResultModal } from '../analytics/AddAnalyticResultModal';
-import { PatientResultsModal } from '../analytics/PatientResultsModal';
-
-const STATUS_FILTER: { value: PatientStatus | 'ALL'; label: string }[] = [
-  { value: 'ALL', label: 'All Statuses' },
-  { value: 'Active', label: 'Active - In Lab' },
-  { value: 'Pending Results', label: 'Pending Analyzer' },
-  { value: 'Urgent / STAT', label: 'Urgent / STAT Priority' },
-  { value: 'Completed', label: 'Completed' },
-];
+import { LabVisitService } from '../../services/labVisitService';
 
 export const PatientsPage: React.FC = () => {
   const { success, error: toastError } = useToast();
@@ -38,12 +28,11 @@ export const PatientsPage: React.FC = () => {
   const [selectedPatientForEdit, setSelectedPatientForEdit] = useState<Patient | null>(null);
   const [selectedPatientForDelete, setSelectedPatientForDelete] = useState<Patient | null>(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState<boolean>(false);
-  const [selectedPatientForAddResult, setSelectedPatientForAddResult] = useState<Patient | null>(null);
-  const [selectedPatientForViewResults, setSelectedPatientForViewResults] = useState<Patient | null>(null);
   const [patientList, setPatientList] = useState<Patient[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [stats, setStats] = useState({ total: 0, active: 0, pending: 0, stat: 0, completed: 0 });
+  const [visitCounts, setVisitCounts] = useState<Record<string, number>>({});
 
   const refreshList = useCallback(() => {
     setRefreshKey((prev) => prev + 1);
@@ -56,6 +45,8 @@ export const PatientsPage: React.FC = () => {
         setPatientList(result.data);
         setTotal(result.total);
         setTotalPages(result.totalPages);
+        const counts = await LabVisitService.getCounts(result.data.map(patient => patient.id));
+        setVisitCounts(counts);
       } catch (error) {
         console.error('Error loading patients:', error);
         setPatientList([]);
@@ -152,58 +143,6 @@ export const PatientsPage: React.FC = () => {
     }
   };
 
-  const renderStatusBadge = (patient: Patient) => {
-    const status = patient.status;
-    const colors: Record<PatientStatus, { bg: string; color: string; border: string; dot: string }> = {
-      'Active': { bg: 'rgba(13, 148, 136, 0.12)', color: '#0d9488', border: 'rgba(13, 148, 136, 0.35)', dot: '#0d9488' },
-      'Pending Results': { bg: 'rgba(217, 119, 6, 0.12)', color: '#d97706', border: 'rgba(217, 119, 6, 0.35)', dot: '#d97706' },
-      'Urgent / STAT': { bg: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', border: 'rgba(239, 68, 68, 0.35)', dot: '#ef4444' },
-      'Completed': { bg: 'rgba(16, 185, 129, 0.12)', color: '#10b981', border: 'rgba(16, 185, 129, 0.35)', dot: '#10b981' },
-    };
-    const c = colors[status] || { bg: '#f3f4f6', color: '#374151', border: '#e5e7eb', dot: '#9ca3af' };
-
-    return (
-      <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-        <span
-          style={{
-            position: 'absolute',
-            left: '9px',
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            backgroundColor: c.dot,
-            pointerEvents: 'none',
-            zIndex: 1,
-          }}
-        />
-        <select
-          value={status}
-          onChange={(e) => handleStatusChange(patient, e.target.value as PatientStatus)}
-          style={{
-            backgroundColor: c.bg,
-            color: c.color,
-            border: `1px solid ${c.border}`,
-            borderRadius: '9999px',
-            padding: '3px 14px 3px 20px',
-            fontSize: '11px',
-            fontWeight: 700,
-            cursor: 'pointer',
-            outline: 'none',
-            fontFamily: 'inherit',
-            transition: 'all 0.2s ease',
-          }}
-          title="Click to change patient status"
-          aria-label={`Change status for ${patient.name}`}
-        >
-          <option value="Active">Active (In Lab)</option>
-          <option value="Pending Results">Pending Results</option>
-          <option value="Urgent / STAT">STAT Urgent</option>
-          <option value="Completed">Completed</option>
-        </select>
-      </div>
-    );
-  };
-
   return (
     <div className="users-page">
       {/* Page Header */}
@@ -252,41 +191,11 @@ export const PatientsPage: React.FC = () => {
             <span className="stat-value">{stats.total}</span>
           </div>
         </Card>
-
-        <Card variant="glass" className="stat-card">
-          <div className="stat-icon-wrapper text-success" style={{ backgroundColor: '#10b98115' }}>
-            <Icons.Activity size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-label">Active in Lab</span>
-            <span className="stat-value">{stats.active}</span>
-          </div>
-        </Card>
-
-        <Card variant="glass" className="stat-card">
-          <div className="stat-icon-wrapper text-warning" style={{ backgroundColor: '#f59e0b15' }}>
-            <Icons.Clock size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-label">Pending Results</span>
-            <span className="stat-value">{stats.pending}</span>
-          </div>
-        </Card>
-
-        <Card variant="glass" className="stat-card">
-          <div className="stat-icon-wrapper text-danger" style={{ backgroundColor: '#ef444415' }}>
-            <Icons.ShieldAlert size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-label">STAT / Urgent</span>
-            <span className="stat-value">{stats.stat}</span>
-          </div>
-        </Card>
       </div>
 
       {/* Search & Filter Toolbar */}
       <Card variant="default" className="table-toolbar-card">
-        <div className="toolbar-grid" style={{ gridTemplateColumns: '3fr 1fr' }}>
+        <div className="toolbar-grid" style={{ gridTemplateColumns: '1fr' }}>
           <div className="search-field-wrap">
             <Input
               placeholder="Search by patient ID, patient name, phone, job title or subtitle..."
@@ -308,24 +217,9 @@ export const PatientsPage: React.FC = () => {
               }
             />
           </div>
-
-          <div className="filter-select-wrap">
-            <Select
-              value={filterOptions.status}
-              onChange={(e) =>
-                setFilterOptions((prev) => ({
-                  ...prev,
-                  status: e.target.value as PatientStatus | 'ALL',
-                  page: 1,
-                }))
-              }
-              options={STATUS_FILTER}
-              leftIcon={<Icons.ShieldCheck size={16} />}
-            />
-          </div>
         </div>
 
-        {(filterOptions.search || filterOptions.status !== 'ALL') && (
+        {filterOptions.search && (
           <div className="active-filters-row">
             <span className="text-xs text-muted font-medium">Filtered Results ({total} found):</span>
             {filterOptions.search && (
@@ -334,17 +228,6 @@ export const PatientsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setFilterOptions((prev) => ({ ...prev, search: '', page: 1 }))}
-                >
-                  <Icons.X size={12} />
-                </button>
-              </span>
-            )}
-            {filterOptions.status !== 'ALL' && (
-              <span className="filter-pill">
-                Status: {filterOptions.status}
-                <button
-                  type="button"
-                  onClick={() => setFilterOptions((prev) => ({ ...prev, status: 'ALL', page: 1 }))}
                 >
                   <Icons.X size={12} />
                 </button>
@@ -409,7 +292,7 @@ export const PatientsPage: React.FC = () => {
                 <th>Phone Number</th>
                 <th>Job Title</th>
                 <th>Clinical Subtitle</th>
-                <th>Status</th>
+                <th>Lab Visits</th>
                 <th className="text-right">Actions</th>
               </tr>
             </thead>
@@ -495,10 +378,8 @@ export const PatientsPage: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Status */}
-                    <td>{renderStatusBadge(patient)}</td>
-
                     {/* Action Buttons */}
+                    <td><span className="font-mono font-bold text-teal">{visitCounts[patient.id] ?? 0}</span></td>
                     <td className="text-right">
                       <div className="actions-cell-group">
                         <button
@@ -509,44 +390,6 @@ export const PatientsPage: React.FC = () => {
                           aria-label={`View details for ${patient.name}`}
                         >
                           <Icons.Eye size={17} />
-                        </button>
-
-                        <button
-                          type="button"
-                          className="action-icon-btn text-success"
-                          onClick={() => setSelectedPatientForAddResult(patient)}
-                          title="Add Analytic Results"
-                          aria-label={`Add results for ${patient.name}`}
-                        >
-                          <Icons.FlaskConical size={17} />
-                        </button>
-
-                        <button
-                          type="button"
-                          className="action-icon-btn text-purple"
-                          onClick={() => setSelectedPatientForViewResults(patient)}
-                          title="View Results & Print"
-                          aria-label={`View results for ${patient.name}`}
-                        >
-                          <Icons.ClipboardList size={17} />
-                        </button>
-
-                        <button
-                          type="button"
-                          className="action-icon-btn text-warning"
-                          onClick={() => {
-                            const cycle: Record<PatientStatus, PatientStatus> = {
-                              'Active': 'Pending Results',
-                              'Pending Results': 'Completed',
-                              'Completed': 'Active',
-                              'Urgent / STAT': 'Completed',
-                            };
-                            handleStatusChange(patient, cycle[patient.status] || 'Active');
-                          }}
-                          title={`Quick cycle status (Current: ${patient.status})`}
-                          aria-label={`Cycle status for ${patient.name}`}
-                        >
-                          <Icons.RotateCw size={16} />
                         </button>
 
                         <button
@@ -654,21 +497,6 @@ export const PatientsPage: React.FC = () => {
         onClose={() => setSelectedPatientForDelete(null)}
         onConfirm={handleDeleteConfirm}
         patient={selectedPatientForDelete}
-      />
-
-      {/* Add Analytic Result Modal */}
-      <AddAnalyticResultModal
-        isOpen={!!selectedPatientForAddResult}
-        onClose={() => setSelectedPatientForAddResult(null)}
-        patient={selectedPatientForAddResult}
-        onSuccess={refreshList}
-      />
-
-      {/* View Patient Results Modal */}
-      <PatientResultsModal
-        isOpen={!!selectedPatientForViewResults}
-        onClose={() => setSelectedPatientForViewResults(null)}
-        patient={selectedPatientForViewResults}
       />
     </div>
   );

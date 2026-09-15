@@ -3,18 +3,18 @@ import type { AuthUser } from "../types/auth";
 import type { Patient } from "../types/patient";
 
 const STORAGE_KEYS = {
-  STAFF_DATA: "bekheit_lab_staff_data_v1",
-  PATIENT_DATA: "bekheit_lab_patient_data_v1",
-  AUTH_SESSION: "bekheit_lab_auth_session_v1",
-  ACTIVITY_LOGS: "bekheit_lab_activity_logs_v1",
+  STAFF_DATA: "bakhet_lab_staff_data_v1",
+  PATIENT_DATA: "bakhet_lab_patient_data_v1",
+  AUTH_SESSION: "bakhet_lab_auth_session_v1",
+  ACTIVITY_LOGS: "bakhet_lab_activity_logs_v1",
 };
 
 export const INITIAL_STAFF_DATA: MedicalStaff[] = [
   {
     id: "staff-01",
     staffId: "BKL-1001",
-    name: "Prof. Dr. Mohamed Bekheit",
-    email: "mohamed.bekheit@bekheitlab.com",
+    name: "Prof. Dr. Mohamed Bakhet",
+    email: "mohamed.bakhet@bakhetlab.com",
     phone: "+20 100 245 8891",
     role: "ADMIN",
     roleTitle: "Consultant Pathologist & Lab Administrator",

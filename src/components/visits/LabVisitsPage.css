@@ -1,0 +1,36 @@
+.visits-page .page-header-row { margin-bottom: 24px; }
+.visit-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; margin-bottom: 22px; }
+.visit-summary-item { padding: 18px; border: 1px solid var(--border-color,#dce5e9); border-radius: 12px; background: var(--card-bg,#fff); }
+.visit-summary-item span { display: block; font-size: 12px; color: var(--text-muted,#64748b); margin-bottom: 8px; }
+.visit-summary-item strong { font-size: 24px; color: var(--text-main,#19354a); }
+.visit-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:16px; margin-bottom:16px; }
+.visit-toolbar .form-group { margin-bottom:0; }
+.visit-status { min-width: 150px; border-radius:20px; padding:7px 12px; font-size:12px; font-weight:600; border:1px solid #cbd5e1; color:#475569; background:#f1f5f9; }
+.visit-status[data-status="New"] { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+.visit-status[data-status="In Lab"] { background:#f5f3ff; color:#6d28d9; border-color:#ddd6fe; }
+.visit-status[data-status="Pending Results"] { background:#fffbeb; color:#b45309; border-color:#fde68a; }
+.visit-status[data-status="Completed"] { background:#f0fdfa; color:#0f766e; border-color:#99f6e4; }
+.visit-action-icons { display:flex; gap:6px; }
+.visit-action-icons button { width:34px; height:34px; border:1px solid var(--border-color,#e2e8f0); border-radius:8px; }
+.visit-action-icons button:disabled { opacity:.35; cursor:not-allowed; }
+.visit-patient-picker { position:relative; margin-bottom:24px; }
+.visit-picker-input { display:flex; align-items:center; gap:10px; border:1px solid var(--border-color,#cbd5e1); border-radius:10px; padding:12px; color:#0d9488; }
+.visit-picker-input:focus-within { border-color:#0d9488; box-shadow:0 0 0 3px #0d948815; }
+.visit-picker-input input { flex:1; min-width:0; border:0; outline:0; color:var(--text-main,#1e293b); background:transparent; font:inherit; }
+.visit-picker-menu { position:absolute; top:78px; left:0; right:0; z-index:50; max-height:240px; overflow:auto; background:var(--card-bg,#fff); border:1px solid var(--border-color,#e2e8f0); border-radius:12px; box-shadow:0 12px 32px #19354a25; }
+.visit-picker-option { display:flex; align-items:center; gap:12px; padding:12px; cursor:pointer; }
+.visit-picker-option.highlighted,.visit-picker-option:hover { background:#0d948810; }
+.visit-picker-option small,.visit-analytic-option small { display:block; color:var(--text-muted,#64748b); font-size:11px; margin-top:4px; }
+.visit-avatar { display:grid; place-items:center; border-radius:50%; width:34px; height:34px; background:#0d948815; color:#0f766e; }
+.visit-picker-empty { padding:16px; }
+.visit-analytic-picker { border:0; padding:0; margin:0 0 24px; min-width:0; }
+.visit-analytic-picker legend { font-weight:600; margin-bottom:12px; }
+.visit-analytic-options { max-height:260px; overflow:auto; display:grid; gap:8px; }
+.visit-analytic-option { display:flex; gap:12px; align-items:center; padding:12px; border:1px solid var(--border-color,#e2e8f0); border-radius:10px; cursor:pointer; }
+.visit-analytic-option.selected { border-color:#0d9488; background:#0d948808; }
+.visit-analytic-option input { width:17px; height:17px; accent-color:#0d9488; }
+.visit-analytic-option span { flex:1; }
+.visit-analytic-option b { white-space:nowrap; font-size:12px; color:#0f766e; }
+.visit-total { display:flex; justify-content:space-between; gap:16px; align-items:center; margin-top:16px; padding:16px; border-radius:10px; background:#0d948810; color:#0f766e; }
+.visit-total strong { font-size:20px; }
+@media(max-width:700px) { .visit-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .visit-total { flex-wrap:wrap; } }

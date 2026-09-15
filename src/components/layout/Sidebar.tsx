@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Icons } from '../common/Icons';
 
-export type NavView = 'patients' | 'analytics' | 'samples' | 'tests' | 'qc' | 'settings' | 'users';
+export type NavView = 'patients' | 'results' | 'analytics' | 'samples' | 'tests' | 'qc' | 'settings' | 'users';
 
 interface SidebarProps {
   activeView: NavView;
@@ -26,6 +26,11 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Icons.Users size={19} />,
     badge: 'Live',
     badgeVariant: 'badge-teal',
+  },
+  {
+    id: 'results',
+    label: 'Lab Visits',
+    icon: <Icons.ClipboardList size={19} />,
   },
   {
     id: 'analytics',

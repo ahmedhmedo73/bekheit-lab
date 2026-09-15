@@ -6,6 +6,7 @@ import { LoginPage } from './components/auth/LoginPage';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import type { NavView } from './components/layout/Sidebar';
 import { PatientsPage } from './components/patients/PatientsPage';
+import { LabVisitsPage } from './components/visits/LabVisitsPage';
 import { AnalyticTypesPage } from './components/analytics/AnalyticTypesPage';
 import { UsersPage } from './components/users/UsersPage';
 import './scripts/migrateToFirestore';
@@ -34,6 +35,8 @@ function AppContent() {
     switch (activeView) {
       case 'analytics':
         return <AnalyticTypesPage />;
+      case 'results':
+        return <LabVisitsPage />;
       case 'users':
         return <UsersPage />;
       case 'patients':

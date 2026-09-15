@@ -9,7 +9,6 @@ import {
   query,
   where,
   orderBy,
-  writeBatch,
   runTransaction,
   QueryDocumentSnapshot,
   DocumentSnapshot,
@@ -18,14 +17,19 @@ import {
 import { db } from '../config/firebase';
 import { trackServiceRequests } from './requestActivity';
 import { migrateAnalyticHierarchy } from '../scripts/migrateAnalyticHierarchy';
+import { migrateLabVisits } from '../scripts/migrateLabVisits';
 import { typeMigration } from './analyticSchema';
 import type { Patient, PatientFormData } from '../types/patient';
 import type { AnalyticType, AnalyticTypeFormData, AnalyticResult, AnalyticResultFormData } from '../types/analyticType';
 import type { MedicalStaff, StaffFormData, StaffFilterOptions } from '../types/user';
+import type { LabVisit, LabVisitFormData } from '../types/labVisit';
+import { resultPriceCents } from './printSelection';
+import { LAB_VISIT_STATUSES } from '../types/labVisit';
 
 const PATIENTS_COLLECTION = 'patients';
 const ANALYTIC_TYPES_COLLECTION = 'analyticTypes';
 const ANALYTIC_RESULTS_COLLECTION = 'analyticResults';
+const LAB_VISITS_COLLECTION = 'labVisits';
 const STAFF_COLLECTION = 'staff';
 
 // Helper function to convert Firestore document to Patient object
@@ -68,6 +72,58 @@ function getRandomMedicalColor(): string {
 }
 
 const firestoreService = {
+  async getLabVisits(patientId?: string): Promise<LabVisit[]> {
+    if (!db) throw new Error('Firestore is not initialized');
+    await migrateLabVisits();
+    const ref = collection(db, LAB_VISITS_COLLECTION);
+    const snapshot = await getDocs(patientId ? query(ref, where('patientId', '==', patientId)) : ref);
+    return snapshot.docs.map(item => ({ ...item.data(), id: item.id, status: item.data().status === 'Open' ? 'New' : item.data().status } as LabVisit)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  },
+
+  async getLabVisitCounts(patientIds: string[]): Promise<Record<string, number>> {
+    const visits = await this.getLabVisits();
+    const allowed = new Set(patientIds);
+    return visits.reduce<Record<string, number>>((counts, visit) => {
+      if (allowed.has(visit.patientId)) counts[visit.patientId] = (counts[visit.patientId] ?? 0) + 1;
+      return counts;
+    }, {});
+  },
+
+  async createLabVisit(data: LabVisitFormData): Promise<LabVisit> {
+    if (!db) throw new Error('Firestore is not initialized');
+    const assignedAnalytics = data.assignedAnalytics ?? [];
+    if (!assignedAnalytics.length) throw new Error('Select at least one analytic type.');
+    if (new Set(assignedAnalytics.map(type => type.id)).size !== assignedAnalytics.length) throw new Error('Select each analytic type only once.');
+    const totalAmount = assignedAnalytics.reduce((sum, type) => sum + resultPriceCents(type.price), 0) / 100;
+    const timestamp = new Date().toISOString();
+    const ref = await addDoc(collection(db, LAB_VISITS_COLLECTION), cleanFirestoreData({
+      ...data, assignedAnalytics, status: 'New', visitNumber: `VIS-${Date.now()}`, totalAmount, paidAmount: 0,
+      createdAt: timestamp, updatedAt: timestamp,
+    }));
+    const snapshot = await getDoc(ref);
+    return { id: ref.id, ...snapshot.data() } as LabVisit;
+  },
+
+  async updateLabVisit(id: string, updates: Partial<Pick<LabVisit, 'status' | 'notes' | 'paidAmount' | 'totalAmount'>>): Promise<void> {
+    if (!db) throw new Error('Firestore is not initialized');
+    if (updates.paidAmount !== undefined && (!Number.isFinite(updates.paidAmount) || updates.paidAmount < 0)) throw new Error('Paid amount must be zero or greater.');
+    if (updates.status !== undefined && !LAB_VISIT_STATUSES.includes(updates.status)) throw new Error('Choose a valid visit status.');
+    await updateDoc(doc(db, LAB_VISITS_COLLECTION, id), cleanFirestoreData({ ...updates, updatedAt: new Date().toISOString() }));
+  },
+
+  async deleteLabVisit(id: string): Promise<boolean> {
+    if (!db) throw new Error('Firestore is not initialized');
+    const attached = await getDocs(query(collection(db, ANALYTIC_RESULTS_COLLECTION), where('visitId', '==', id)));
+    if (!attached.empty) throw new Error('This visit has saved results and cannot be deleted.');
+    const ref = doc(db, LAB_VISITS_COLLECTION, id);
+    await runTransaction(db, async transaction => {
+      const current = await transaction.get(ref);
+      if (!current.exists()) return;
+      if (Number(current.data().paidAmount) > 0) throw new Error('This visit has recorded payments and cannot be deleted.');
+      transaction.delete(ref);
+    });
+    return true;
+  },
   // Get all patients
   async getAllPatients(): Promise<Patient[]> {
     if (!db) {
@@ -370,14 +426,25 @@ const firestoreService = {
 
   async createAnalyticResults(entries: AnalyticResultFormData[]): Promise<void> {
     if (!db) throw new Error('Firestore is not initialized');
-    if (entries.length > 500) throw new Error('Save at most 500 panels at a time.');
-    const batch = writeBatch(db);
-    for (const data of entries) {
-      batch.set(doc(collection(db, ANALYTIC_RESULTS_COLLECTION)), {
-        ...data, schemaVersion: 2, createdAt: new Date().toISOString(),
-      });
-    }
-    await batch.commit();
+    if (!entries.length) return;
+    if (entries.length > 499) throw new Error('Save at most 499 panels at a time.');
+    const visitId = entries[0]?.visitId;
+    if (!visitId || entries.some(entry => entry.visitId !== visitId || entry.patientId !== entries[0].patientId)) throw new Error('Choose one lab visit for these results.');
+    const visitRef = doc(db, LAB_VISITS_COLLECTION, visitId);
+    const refs = entries.map(() => doc(collection(db!, ANALYTIC_RESULTS_COLLECTION)));
+    await runTransaction(db, async transaction => {
+      const visit = await transaction.get(visitRef);
+      if (!visit.exists() || visit.data().patientId !== entries[0].patientId) throw new Error('The selected visit does not belong to this patient.');
+      if (!['Open', 'New', 'In Lab', 'Pending Results'].includes(visit.data().status)) throw new Error('Change the visit to In Lab or Pending Results before adding results.');
+      const assigned = visit.data().assignedAnalytics as AnalyticType[] | undefined;
+      if (assigned?.length && entries.some(entry => !assigned.some(type => type.id === entry.analyticTypeId))) throw new Error('Results must belong to the analytic types assigned to this visit.');
+      const timestamp = new Date().toISOString();
+      entries.forEach((data, index) => transaction.set(refs[index], cleanFirestoreData({ ...data, schemaVersion: 2, createdAt: timestamp })));
+      // Ordered panels were charged when the visit was created. Recording or
+      // repeating their results must not charge the patient a second time.
+      const cents = assigned?.length ? resultPriceCents(visit.data().totalAmount) : entries.reduce((sum, entry) => sum + resultPriceCents(entry.price), resultPriceCents(visit.data().totalAmount));
+      transaction.update(visitRef, { totalAmount: cents / 100, updatedAt: timestamp });
+    });
   },
 
   async createAnalyticResult(data: AnalyticResultFormData): Promise<AnalyticResult> {
@@ -401,7 +468,18 @@ const firestoreService = {
     if (!db) throw new Error('Firestore is not initialized');
     try {
       const docRef = doc(db, ANALYTIC_RESULTS_COLLECTION, id);
-      await deleteDoc(docRef);
+      await runTransaction(db, async transaction => {
+        const result = await transaction.get(docRef);
+        if (!result.exists()) return;
+        const visitId = result.data().visitId;
+        const visitRef = visitId ? doc(db!, LAB_VISITS_COLLECTION, visitId) : null;
+        const visit = visitRef ? await transaction.get(visitRef) : null;
+        transaction.delete(docRef);
+        if (visit?.exists() && visitRef) transaction.update(visitRef, {
+          totalAmount: visit.data().assignedAnalytics?.length ? resultPriceCents(visit.data().totalAmount) / 100 : Math.max(0, resultPriceCents(visit.data().totalAmount) - resultPriceCents(result.data().price)) / 100,
+          updatedAt: new Date().toISOString(),
+        });
+      });
       return true;
     } catch (error) {
       console.error('Error deleting analytic result:', error);

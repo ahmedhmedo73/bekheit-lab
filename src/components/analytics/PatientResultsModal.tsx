@@ -1,3 +1,4 @@
+import { flaggedResult } from '../../services/resultFlag';
 import React, { useState, useEffect } from 'react';
 import type { Patient } from '../../types/patient';
 import type { AnalyticResult } from '../../types/analyticType';
@@ -15,12 +16,14 @@ interface PatientResultsModalProps {
   isOpen: boolean;
   onClose: () => void;
   patient: Patient | null;
+  visitId?: string;
 }
 
 export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
   isOpen,
   onClose,
   patient,
+  visitId,
 }) => {
   const [results, setResults] = useState<AnalyticResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,6 +45,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
       AnalyticResultService.getByPatientId(patient.id)
         .then(data => {
           if (!active) return;
+          if (visitId) data = data.filter(result => result.visitId === visitId);
           setResults(data);
           setSelectedIds(latestPanelResults(data).map(result => result.id));
         })
@@ -49,7 +53,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
         .finally(() => { if (active) setLoading(false); });
     }
     return () => { active = false; };
-  }, [isOpen, patient, refreshKey]);
+  }, [isOpen, patient, visitId, refreshKey]);
 
   if (!patient) return null;
 
@@ -183,7 +187,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
                     <table className="medical-table">
                       <thead><tr><th>Child Analytic</th><th>Value</th><th>Unit</th><th>Reference Range</th></tr></thead>
                       <tbody>{resultMigration(r).children.map(child => (
-                        <tr key={child.id}><td><small>{child.section}</small><div>{child.name}</div></td><td style={{ whiteSpace: 'pre-wrap' }}>{child.resultType === 'differential' ? 'Relative: ' : ''}{child.result}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteResult}</div>}</td><td>{child.unit || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteUnit || 'Not specified'}</div>}</td><td style={{ whiteSpace: 'pre-wrap' }}>{child.referenceRange || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteReferenceRange || 'Not specified'}</div>}</td></tr>
+                        <tr key={child.id}><td><small>{child.section}</small><div>{child.name}</div></td><td style={{ whiteSpace: 'pre-wrap' }}>{child.resultType === 'differential' ? 'Relative: ' : ''}{flaggedResult(child.result, child.referenceRange, patient.gender)}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {flaggedResult(child.absoluteResult, child.absoluteReferenceRange, patient.gender)}</div>}</td><td>{child.unit || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteUnit || 'Not specified'}</div>}</td><td style={{ whiteSpace: 'pre-wrap' }}>{child.referenceRange || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteReferenceRange || 'Not specified'}</div>}</td></tr>
                       ))}</tbody>
                     </table>
                   </td>

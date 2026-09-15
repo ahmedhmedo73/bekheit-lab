@@ -34,6 +34,7 @@ export type AnalyticTypeFormData = Omit<AnalyticType, 'id' | 'createdAt' | 'upda
 export interface AnalyticResult {
   id: string;
   patientId: string;
+  visitId?: string;
   analyticTypeId: string;
   analyticTypeName: string;
   price: number;

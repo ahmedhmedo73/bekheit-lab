@@ -15,6 +15,8 @@ interface AddAnalyticResultModalProps {
   isOpen: boolean;
   onClose: () => void;
   patient: Patient | null;
+  visitId?: string;
+  assignedAnalytics?: AnalyticType[];
   onSuccess?: () => void;
 }
 
@@ -32,6 +34,8 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
   isOpen,
   onClose,
   patient,
+  visitId,
+  assignedAnalytics,
   onSuccess,
 }) => {
   const { success, error: toastError } = useToast();
@@ -43,6 +47,12 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
   useEffect(() => {
     let active = true;
     if (isOpen) {
+      if (assignedAnalytics?.length) {
+        setAnalyticTypes(assignedAnalytics);
+        setEntries(assignedAnalytics.map(type => ({ analyticTypeId: type.id, analyticTypeName: type.name, price: type.price, result: '', children: analyticChildren(type).map(emptyAnalyticResult), notes: '', generalComment: type.generalComment ?? '' })));
+        setLoadingTypes(false);
+        return () => { active = false; };
+      }
       setLoadingTypes(true);
       setAnalyticTypes([]);
       AnalyticTypeService.getAll().then(types => { if (active) setAnalyticTypes(types); })
@@ -51,7 +61,7 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
       setEntries([]);
     }
     return () => { active = false; };
-  }, [isOpen, toastError]);
+  }, [isOpen, toastError, assignedAnalytics]);
 
   const addEntry = (type: AnalyticType) => {
     // Prevent duplicates
@@ -104,6 +114,7 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
       const results = entries.map(entry => {
         const data: AnalyticResultFormData = {
           patientId: patient.id,
+          visitId,
           analyticTypeId: entry.analyticTypeId,
           analyticTypeName: entry.analyticTypeName,
           price: entry.price,

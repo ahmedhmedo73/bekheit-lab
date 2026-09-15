@@ -1,6 +1,10 @@
 # Firestore Integration Setup Guide
 
-This document explains how to set up Firestore as the backend database for the Bekheit Medical Laboratories application.
+This document explains how to set up Firestore as the backend database for the Bakhet Medical Laboratories application.
+
+## Analytic results migration
+
+The application automatically migrates legacy analytic result documents before reading the catalog or a patient’s result history. It preserves each existing result and adds the child-result structure required for multiple analytic panels per patient. New entries are stored as separate documents in the `analyticResults` collection using the patient’s `patientId`, so a patient can have any number of dated result entries.
 
 ## Prerequisites
 
