@@ -11,10 +11,10 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeView }) => {
   const { user, logout } = useAuth();
-  const { info, success } = useToast();
+  const { success } = useToast();
   const [time, setTime] = useState<string>('');
   const [showUserMenu, setShowUserMenu] = useState<boolean>(false);
-  const [showNotifications, setShowNotifications] = useState<boolean>(false);
+  const [ ,setShowNotifications] = useState<boolean>(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
