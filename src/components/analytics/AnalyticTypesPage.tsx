@@ -124,7 +124,7 @@ export const AnalyticTypesPage: React.FC = () => {
       {/* KPI Stats */}
       <div className="stats-grid">
         <Card variant="glass" className="stat-card">
-          <div className="stat-icon-wrapper text-teal" style={{ backgroundColor: '#0d948815' }}>
+          <div className="stat-icon-wrapper text-teal" style={{ backgroundColor: 'var(--brand-secondary-light)' }}>
             <Icons.FlaskConical size={24} />
           </div>
           <div className="stat-content">
@@ -268,7 +268,7 @@ export const AnalyticTypesPage: React.FC = () => {
                       <div className="staff-cell-flex">
                         <div
                           className="table-avatar"
-                          style={{ backgroundColor: '#0d9488' }}
+                          style={{ backgroundColor: 'var(--brand-secondary)' }}
                         >
                           {type.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()}
                         </div>

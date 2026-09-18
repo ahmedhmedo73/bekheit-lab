@@ -32,6 +32,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
   const [refreshKey, setRefreshKey] = useState(0);
   const [deletingResult, setDeletingResult] = useState<AnalyticResult | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [printing, setPrinting] = useState(false);
   const { success, error: toastError } = useToast();
 
   useEffect(() => {
@@ -76,23 +77,27 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
     } finally { setDeleting(false); }
   };
 
-  const handlePrint = () => {
-    if (loading || deleting || selectedResults.length === 0) return;
+  const handlePrint = async (watermark: boolean) => {
+    if (loading || deleting || printing || selectedResults.length === 0) return;
     const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    const htmlContent = buildAnalyticReport(patient, selectedResults);
-
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      try {
+    if (!printWindow) {
+      toastError('Popup Blocked', 'Allow popups for this website to print the report.');
+      return;
+    }
+    setPrinting(true);
+    try {
+      const logoUrl = new URL(`${import.meta.env.BASE_URL}bakhet-logo.png`, window.location.origin).href;
+      printWindow.document.write(buildAnalyticReport(patient, selectedResults, { logoUrl, watermark }));
+      printWindow.document.close();
+      await Promise.all(Array.from(printWindow.document.images, image => image.decode()));
+      await printWindow.document.fonts.ready;
+      if (!printWindow.closed) {
+        printWindow.focus();
         printWindow.print();
-      } catch {
-        toastError('Print Failed', 'Please use the browser print command in the report window.');
       }
-    }, 300);
+    } catch {
+      toastError('Print Failed', 'Could not prepare the report logo. Please retry printing.');
+    } finally { setPrinting(false); }
   };
 
   return (
@@ -108,7 +113,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
       }
       subtitle={`Viewing test results for ${patient.name} (${patient.patientId})`}
       footer={
-        <div className="modal-footer-actions">
+        <div className="modal-footer-actions" style={{ flexWrap: 'wrap' }}>
           <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Icons.DollarSign size={16} className="text-teal" />
             <span className="font-bold text-sm text-teal">
@@ -120,12 +125,21 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
           </Button>
           <Button
             type="button"
-            variant="medical"
-            onClick={handlePrint}
-            disabled={loading || deleting || selectedResults.length === 0}
+            variant="outline"
+            onClick={() => handlePrint(false)}
+            disabled={loading || deleting || printing || selectedResults.length === 0}
             leftIcon={<Icons.Printer size={16} />}
           >
-            Print Selected ({selectedResults.length})
+            Print White ({selectedResults.length})
+          </Button>
+          <Button
+            type="button"
+            variant="medical"
+            onClick={() => handlePrint(true)}
+            disabled={loading || deleting || printing || selectedResults.length === 0}
+            leftIcon={<Icons.Printer size={16} />}
+          >
+            Print with Watermark ({selectedResults.length})
           </Button>
         </div>
       }

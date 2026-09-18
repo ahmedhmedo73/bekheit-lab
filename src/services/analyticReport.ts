@@ -42,8 +42,9 @@ function renderResultTables(children: ChildAnalyticResult[], panelName: string, 
   }).join('');
 }
 
-export function buildAnalyticReport(patient: Patient, results: AnalyticResult[]): string {
+export function buildAnalyticReport(patient: Patient, results: AnalyticResult[], options: { logoUrl?: string; watermark?: boolean } = {}): string {
   const panels = latestPanelResults(results);
+  const logoUrl = escapeHtml(options.logoUrl || 'bakhet-logo.png');
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lab Report — ${escapeHtml(patient.name)}</title>
@@ -51,9 +52,13 @@ export function buildAnalyticReport(patient: Patient, results: AnalyticResult[])
   @page { size: A4 portrait; margin: 15mm 12mm; }
   * { box-sizing: border-box; }
   body { margin: 0; color: #000; background: white; font-family: "Times New Roman", Times, serif; }
-  .report-page { min-height: 267mm; display: flex; flex-direction: column; break-after: page; }
+  .report-page { position: relative; isolation: isolate; min-height: 267mm; display: flex; flex-direction: column; break-after: page; }
+  .report-page > :not(.watermark) { position: relative; z-index: 1; }
+  .watermark { position: absolute; z-index: 0; top: 65mm; left: 50%; transform: translateX(-50%); width: 145mm; height: 145mm; object-fit: contain; opacity: 0.16; pointer-events: none; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .report-page:last-child { break-after: auto; }
-  .lab-name { font-size: 15pt; text-align: center; letter-spacing: 1px; margin: 0 0 2mm; }
+  .report-header { text-align: center; margin-bottom: 2mm; break-inside: avoid; }
+  .report-logo { display: block; width: 28mm; height: 28mm; object-fit: contain; margin: 0 auto 1mm; }
+  .lab-name { font-family: Arial, sans-serif; font-size: 10pt; text-align: center; margin: 0; }
   .lab-subtitle { text-align: center; font-size: 9pt; margin: 0 0 9mm; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   .patient-info { font-size: 9pt; margin-bottom: 6mm; }
@@ -82,7 +87,8 @@ export function buildAnalyticReport(patient: Patient, results: AnalyticResult[])
 ${panels.map(result => {
   const children = result.children ?? [{ id: 'legacy', name: result.analyticTypeName, result: result.result, unit: '', referenceRange: '' }];
   return `<section class="report-page">
-    <header><p class="lab-subtitle">Clinical Pathology — Laboratory Report</p></header>
+    ${options.watermark ? `<img class="watermark" src="${logoUrl}" alt="" aria-hidden="true">` : ''}
+    <header class="report-header"><img class="report-logo" src="${logoUrl}" alt="Bakhet Medical Laboratory logo"><p class="lab-name">BAKHET MEDICAL LABORATORY</p></header>
     <table class="patient-info" aria-label="Patient details"><tbody>
       <tr><th>Name</th><td dir="auto">${escapeHtml(patient.name)}</td><th>Patient ID</th><td>${escapeHtml(patient.patientId)}</td></tr>
       <tr><th>Sex</th><td>${escapeHtml(patient.gender || '—')}</td><th>Age</th><td>${escapeHtml(patient.age)} Y</td></tr>

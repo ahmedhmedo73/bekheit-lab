@@ -29,7 +29,7 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
         <div className="flex items-center gap-3">
           <div
             className="user-details-avatar"
-            style={{ backgroundColor: staff.avatarColor || '#0284c7' }}
+            style={{ backgroundColor: staff.avatarColor || 'var(--brand-primary)' }}
           >
             {staff.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
           </div>

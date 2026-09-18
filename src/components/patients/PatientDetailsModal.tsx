@@ -46,7 +46,7 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
         <div className="flex items-center gap-3">
           <div
             className="user-details-avatar"
-            style={{ backgroundColor: patient.avatarColor || '#0284c7' }}
+            style={{ backgroundColor: patient.avatarColor || 'var(--brand-primary)' }}
           >
             {patient.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
           </div>
@@ -87,7 +87,7 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
                 style={{
                   backgroundColor:
                     patient.status === 'Active'
-                      ? 'rgba(13, 148, 136, 0.12)'
+                      ? 'var(--brand-secondary-light)'
                       : patient.status === 'Pending Results'
                       ? 'rgba(217, 119, 6, 0.12)'
                       : patient.status === 'Urgent / STAT'
@@ -95,7 +95,7 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
                       : 'rgba(16, 185, 129, 0.12)',
                   color:
                     patient.status === 'Active'
-                      ? '#0d9488'
+                      ? 'var(--brand-secondary-hover)'
                       : patient.status === 'Pending Results'
                       ? '#d97706'
                       : patient.status === 'Urgent / STAT'

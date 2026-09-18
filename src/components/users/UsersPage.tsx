@@ -232,7 +232,7 @@ export const UsersPage: React.FC = () => {
       {/* KPI Stats Widgets */}
       <div className="stats-grid">
         <Card variant="glass" className="stat-card">
-          <div className="stat-icon-wrapper text-teal" style={{ backgroundColor: '#0d948815' }}>
+          <div className="stat-icon-wrapper text-teal" style={{ backgroundColor: 'var(--brand-secondary-light)' }}>
             <Icons.Users size={24} />
           </div>
           <div className="stat-content">
@@ -267,7 +267,7 @@ export const UsersPage: React.FC = () => {
         </Card>
 
         <Card variant="glass" className="stat-card">
-          <div className="stat-icon-wrapper text-primary" style={{ backgroundColor: '#0284c715' }}>
+          <div className="stat-icon-wrapper text-primary" style={{ backgroundColor: 'var(--brand-primary-light)' }}>
             <Icons.Award size={24} />
           </div>
           <div className="stat-content">
@@ -525,7 +525,7 @@ export const UsersPage: React.FC = () => {
                       <div className="staff-cell-flex">
                         <div
                           className="table-avatar"
-                          style={{ backgroundColor: staff.avatarColor || '#0284c7' }}
+                          style={{ backgroundColor: staff.avatarColor || 'var(--brand-primary)' }}
                         >
                           {staff.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
                         </div>

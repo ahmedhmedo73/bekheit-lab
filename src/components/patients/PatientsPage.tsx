@@ -183,7 +183,7 @@ export const PatientsPage: React.FC = () => {
       {/* KPI Stats */}
       <div className="stats-grid">
         <Card variant="glass" className="stat-card">
-          <div className="stat-icon-wrapper text-teal" style={{ backgroundColor: '#0d948815' }}>
+          <div className="stat-icon-wrapper text-teal" style={{ backgroundColor: 'var(--brand-secondary-light)' }}>
             <Icons.Users size={24} />
           </div>
           <div className="stat-content">
@@ -336,7 +336,7 @@ export const PatientsPage: React.FC = () => {
                       <div className="staff-cell-flex">
                         <div
                           className="table-avatar"
-                          style={{ backgroundColor: patient.avatarColor || '#0284c7' }}
+                          style={{ backgroundColor: patient.avatarColor || 'var(--brand-primary)' }}
                         >
                           {patient.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
                         </div>

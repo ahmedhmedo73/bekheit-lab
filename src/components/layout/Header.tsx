@@ -165,7 +165,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeView }) =
               onClick={() => setShowUserMenu(!showUserMenu)}
               aria-label="User profile and session menu"
             >
-              <div className="user-avatar-badge" style={{ backgroundColor: '#0284c7' }}>
+              <div className="user-avatar-badge" style={{ backgroundColor: 'var(--brand-primary)' }}>
                 {user.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
               </div>
               <div className="user-profile-meta">

@@ -54,7 +54,7 @@ export const LoginPage: React.FC = () => {
         <div className="login-banner">
           <div className="login-brand-header">
             <div className="brand-icon-box">
-              <Icons.Microscope size={28} className="text-white" />
+              <img src={`${import.meta.env.BASE_URL}bakhet-logo.png`} alt="Bakhet Medical Laboratory logo" />
             </div>
             <div>
               <h1 className="brand-title">Bakhet</h1>
@@ -63,11 +63,6 @@ export const LoginPage: React.FC = () => {
           </div>
 
           <div className="login-banner-content">
-            <div className="lab-chip">
-              <Icons.Activity size={14} className="animate-pulse" />
-              <span>LIMS Enterprise v4.2 • Core Lab Active</span>
-            </div>
-
             <h2 className="banner-headline">
               Precision Diagnostics & Clinical Intelligence
             </h2>
@@ -86,7 +81,7 @@ export const LoginPage: React.FC = () => {
         <div className="login-form-pane">
           <div className="login-form-header">
             <div className="mobile-brand-tag">
-              <Icons.Microscope size={20} />
+              <img src={`${import.meta.env.BASE_URL}bakhet-logo.png`} alt="" />
               <span>Bakhet MEDICAL LAB</span>
             </div>
             <h2 className="login-title">Staff Portal Sign In</h2>

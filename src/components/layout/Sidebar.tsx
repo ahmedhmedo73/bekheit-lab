@@ -74,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Brand Banner */}
         <div className="sidebar-brand">
           <div className="sidebar-brand-icon">
-            <Icons.Microscope size={22} className="text-white" />
+            <img src={`${import.meta.env.BASE_URL}bakhet-logo.png`} alt="Bakhet Medical Laboratory logo" />
           </div>
           <div className="sidebar-brand-text">
             <h1 className="sidebar-brand-name">BAKHET LAB</h1>

@@ -6,6 +6,21 @@ const patient = { name: '<script>patient</script>', patientId: 'PAT-1', age: 45,
 const old = { id: 'old', analyticTypeId: 'kidney', analyticTypeName: 'Kidney Functions', createdAt: '2026-09-01', result: 'old value' };
 const current = { ...old, id: 'new', createdAt: '2026-09-14', children: [{ id: 'urea', name: 'Urea Serum', result: '<5', unit: 'mmol/L', referenceRange: 'Published example; lab review required' }] };
 
+test('both print modes have a logo on every panel, with watermark only when requested', () => {
+  const panels = [current, { ...old, analyticTypeId: 'liver' }];
+  const logoUrl = 'https://example.test/bakhet-lab/bakhet-logo.png?x=1&y=2';
+  const white = buildAnalyticReport(patient, panels, { logoUrl });
+  const watermarked = buildAnalyticReport(patient, panels, { logoUrl, watermark: true });
+  for (const html of [white, watermarked]) {
+    assert.equal(html.match(/class="report-logo"/g).length, 2);
+    assert.equal(html.match(/BAKHET MEDICAL LABORATORY/g).length, 2);
+    assert.ok(html.includes('bakhet-logo.png?x=1&amp;y=2'));
+    assert.ok(html.includes('&lt;5'));
+  }
+  assert.ok(!white.includes('<img class="watermark"'));
+  assert.equal(watermarked.match(/<img class="watermark"/g).length, 2);
+});
+
 test('print uses latest panel without changing historical data', () => {
   assert.deepEqual(latestPanelResults([old, current]), [current]);
   assert.deepEqual(latestPanelResults([current, old]), [current]);

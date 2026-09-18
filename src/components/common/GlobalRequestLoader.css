@@ -1,6 +1,6 @@
 .global-request-loader { position: fixed; inset: 0 0 auto; z-index: 10000; pointer-events: none; color: #fff; }
-.global-request-progress { height: 3px; background: linear-gradient(90deg, #0d9488, #5eead4, #0284c7); background-size: 200% 100%; animation: global-request-flow 1.2s linear infinite; }
-.global-request-label { display: flex; align-items: center; gap: 10px; width: fit-content; margin: 12px auto; padding: 10px 18px; border-radius: 24px; background: #0f766e; box-shadow: 0 3px 16px #0003; font-size: 14px; font-weight: 600; }
+.global-request-progress { height: 3px; background: linear-gradient(90deg, var(--brand-primary), #d7b667, var(--brand-secondary)); background-size: 200% 100%; animation: global-request-flow 1.2s linear infinite; }
+.global-request-label { display: flex; align-items: center; gap: 10px; width: fit-content; margin: 12px auto; padding: 10px 18px; border-radius: 24px; background: var(--brand-primary); box-shadow: 0 3px 16px #0003; font-size: 14px; font-weight: 600; }
 .global-request-label .btn-spinner { width: 18px; height: 18px; }
 @keyframes global-request-flow { to { background-position: 200% 0; } }
 @media (prefers-reduced-motion: reduce) { .global-request-progress, .global-request-label .btn-spinner { animation: none; } }

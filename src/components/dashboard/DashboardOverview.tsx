@@ -130,7 +130,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
               <div key={staff.id} className="on-duty-item">
                 <div
                   className="table-avatar"
-                  style={{ backgroundColor: staff.avatarColor || '#0284c7' }}
+                  style={{ backgroundColor: staff.avatarColor || 'var(--brand-primary)' }}
                 >
                   {staff.name.split(' ').map((n: string) => n[0]).slice(0, 2).join('')}
                 </div>
