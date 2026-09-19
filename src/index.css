@@ -1646,6 +1646,34 @@ a:hover {
   background-color: #f8fafc;
 }
 
+.mobile-row-heading, .mobile-row-toggle { display: none; }
+
+@media (max-width: 768px) {
+  .collapsible-table, .collapsible-table > tbody { display: block; width: 100%; }
+  .collapsible-table > thead { display: none; }
+  .collapsible-table > tbody > tr[data-expanded] { display: block; margin: 0.75rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--bg-surface); box-shadow: var(--shadow-sm); overflow: hidden; }
+  .collapsible-table > tbody > tr[data-expanded] > td { display: none; border-bottom: 1px solid var(--border-subtle); padding: 0.75rem 1rem; overflow-wrap: anywhere; }
+  .collapsible-table > tbody > tr[data-expanded] > td.mobile-row-primary { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; font-weight: 700; background: var(--brand-primary-light); }
+  .collapsible-table > tbody > tr[data-expanded][data-primary-cell="1"] > td:first-child { display: block; width: auto; float: left; background: var(--brand-primary-light); border: 0; }
+  .collapsible-table > tbody > tr[data-expanded][data-primary-cell="1"] > td.mobile-row-primary { min-height: 52px; }
+  .collapsible-table > tbody > tr[data-expanded="true"] > td { display: block; }
+  .collapsible-table > tbody > tr[data-expanded="true"] > td.mobile-row-primary { display: flex; }
+  .collapsible-table > tbody > tr[data-expanded] > td:not(.mobile-row-primary)::before { content: attr(data-label); display: block; margin-bottom: 0.25rem; color: var(--text-muted); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+  .collapsible-table > tbody > tr[data-expanded] .mobile-row-original { display: none; }
+  .collapsible-table > tbody > tr[data-expanded="true"] .mobile-row-original { display: block; margin-right: auto; }
+  .collapsible-table > tbody > tr[data-expanded] .mobile-row-heading { display: block; margin-right: auto; }
+  .collapsible-table > tbody > tr[data-expanded="true"] .mobile-row-heading { display: none; }
+  .collapsible-table > tbody > tr[data-expanded] .mobile-row-toggle { display: inline-flex; flex: none; border: 1px solid var(--border-strong); border-radius: 8px; color: var(--brand-primary); background: #fff; padding: 0.35rem; cursor: pointer; }
+  .collapsible-table > tbody > tr[data-expanded="true"] .mobile-row-toggle svg { transform: rotate(180deg); }
+  .collapsible-table > tbody > tr[data-expanded] .actions-cell-group, .collapsible-table > tbody > tr[data-expanded] .visit-action-icons { flex-wrap: wrap; justify-content: flex-start; }
+  .collapsible-table > tbody > tr:not([data-expanded]) > td { display: block; width: 100%; }
+  .collapsible-table > tbody > tr[data-expanded] table.medical-table, .collapsible-table > tbody > tr[data-expanded] table.medical-table tbody, .collapsible-table > tbody > tr[data-expanded] table.medical-table tr { display: block; width: 100%; }
+  .collapsible-table > tbody > tr[data-expanded] table.medical-table thead { display: none; }
+  .collapsible-table > tbody > tr[data-expanded] table.medical-table tr { padding: 0.4rem 0; border-bottom: 1px solid var(--border-subtle); }
+  .collapsible-table > tbody > tr[data-expanded] table.medical-table td { display: block; width: 100%; min-width: 0 !important; max-width: none !important; border: 0; padding: 0.3rem 0.5rem; }
+  .collapsible-table > tbody > tr[data-expanded] table.medical-table td::before { content: attr(data-label); display: block; color: var(--text-muted); font-size: 0.7rem; font-weight: 700; }
+}
+
 .staff-cell-flex {
   display: flex;
   align-items: center;

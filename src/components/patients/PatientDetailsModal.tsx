@@ -9,7 +9,7 @@ interface PatientDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   patient: Patient | null;
-  onEdit: (patient: Patient) => void;
+  onEdit?: (patient: Patient) => void;
   onStatusChange?: (patient: Patient, newStatus: PatientStatus) => void;
 }
 
@@ -62,7 +62,7 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
           <Button type="button" variant="outline" onClick={onClose}>
             Close
           </Button>
-          <Button
+          {onEdit && <Button
             type="button"
             variant="medical"
             onClick={() => {
@@ -72,7 +72,7 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
             leftIcon={<Icons.Edit size={16} />}
           >
             Edit Record
-          </Button>
+          </Button>}
         </div>
       }
     >

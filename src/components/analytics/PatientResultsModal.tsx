@@ -6,6 +6,7 @@ import { AnalyticResultService } from '../../services/analyticResultService';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Icons } from '../common/Icons';
+import { CollapsibleRow } from '../common/CollapsibleRow';
 import { buildAnalyticReport, latestPanelResults } from '../../services/analyticReport';
 import { resultMigration } from '../../services/analyticSchema';
 import { selectedResultTotal, resultPriceCents, togglePrintResult } from '../../services/printSelection';
@@ -174,7 +175,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
             <Button type="button" variant="danger" isLoading={deleting} disabled={deleting} onClick={handleDelete}>Delete Saved Result</Button></div>
         </div>}
         <div className="table-responsive">
-          <table className="medical-table">
+          <table className="medical-table collapsible-table">
             <thead>
               <tr>
                 <th style={{ width: '60px' }}>Print</th>
@@ -188,7 +189,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
             </thead>
             <tbody>
               {results.map((r) => (
-                <tr key={r.id} className="table-row-hover">
+                <CollapsibleRow key={r.id} className="table-row-hover" summary={r.analyticTypeName} primaryCell={1}>
                   <td>
                     <input type="checkbox" aria-label={`Print ${r.analyticTypeName} ${r.createdAt || r.id}`} checked={selectedIds.includes(r.id)} disabled={deleting}
                       onChange={() => setSelectedIds(previous => togglePrintResult(results, previous, r))} />
@@ -197,29 +198,29 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
                     <span className="font-semibold text-sm text-main">{r.analyticTypeName}</span>
                     <div className="text-xs text-muted">{latestIds.has(r.id) ? 'Latest result' : 'Older result'}</div>
                   </td>
-                  <td>
+                  <td data-label="Result">
                     <table className="medical-table">
                       <thead><tr><th>Child Analytic</th><th>Value</th><th>Unit</th><th>Reference Range</th></tr></thead>
                       <tbody>{resultMigration(r).children.map(child => (
-                        <tr key={child.id}><td><small>{child.section}</small><div>{child.name}</div></td><td style={{ whiteSpace: 'pre-wrap' }}>{child.resultType === 'differential' ? 'Relative: ' : ''}{flaggedResult(child.result, child.referenceRange, patient.gender)}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {flaggedResult(child.absoluteResult, child.absoluteReferenceRange, patient.gender)}</div>}</td><td>{child.unit || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteUnit || 'Not specified'}</div>}</td><td style={{ whiteSpace: 'pre-wrap' }}>{child.referenceRange || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteReferenceRange || 'Not specified'}</div>}</td></tr>
+                        <tr key={child.id}><td data-label="Child Analytic"><small>{child.section}</small><div>{child.name}</div></td><td data-label="Value" style={{ whiteSpace: 'pre-wrap' }}>{child.resultType === 'differential' ? 'Relative: ' : ''}{flaggedResult(child.result, child.referenceRange, patient.gender)}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {flaggedResult(child.absoluteResult, child.absoluteReferenceRange, patient.gender)}</div>}</td><td data-label="Unit">{child.unit || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteUnit || 'Not specified'}</div>}</td><td data-label="Reference Range" style={{ whiteSpace: 'pre-wrap' }}>{child.referenceRange || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteReferenceRange || 'Not specified'}</div>}</td></tr>
                       ))}</tbody>
                     </table>
                   </td>
-                  <td>
+                  <td data-label="Notes">
                     {r.generalComment && <p style={{ whiteSpace: 'pre-wrap' }}><strong>General Comment:</strong> {r.generalComment}</p>}
                     <span className="text-xs text-muted">{r.notes || '—'}</span>
                   </td>
-                  <td style={{ textAlign: 'right' }}>
+                  <td data-label="Price" style={{ textAlign: 'right' }}>
                     <span className="font-mono font-bold text-sm">{(resultPriceCents(r.price) / 100).toFixed(2)}</span>
                   </td>
-                  <td>
+                  <td data-label="Date">
                     <span className="text-xs text-muted">
                       {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}
                     </span>
                   </td>
-                  <td><button type="button" className="action-icon-btn text-danger" disabled={deleting}
+                  <td data-label="Actions"><button type="button" className="action-icon-btn text-danger" disabled={deleting}
                     aria-label={`Delete saved result ${r.analyticTypeName} ${r.createdAt || r.id}`} title="Delete saved result" onClick={() => setDeletingResult(r)}><Icons.Trash2 size={17} /></button></td>
-                </tr>
+                </CollapsibleRow>
               ))}
             </tbody>
           </table>

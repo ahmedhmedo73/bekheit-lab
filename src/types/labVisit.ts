@@ -1,6 +1,6 @@
 import type { AnalyticType } from './analyticType';
 
-export const LAB_VISIT_STATUSES = ['New', 'In Lab', 'Pending Results', 'Completed'] as const;
+export const LAB_VISIT_STATUSES = ['New', 'In Lab', 'Completed'] as const;
 export type LabVisitStatus = typeof LAB_VISIT_STATUSES[number];
 
 export interface LabVisit {

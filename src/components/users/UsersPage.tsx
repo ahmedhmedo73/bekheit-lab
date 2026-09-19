@@ -10,6 +10,7 @@ import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { Select } from '../common/Select';
 import { Card } from '../common/Card';
+import { CollapsibleRow } from '../common/CollapsibleRow';
 import { RoleBadge } from '../common/Badge';
 import { UserFormModal } from './UserFormModal';
 import { UserDetailsModal } from './UserDetailsModal';
@@ -429,7 +430,7 @@ export const UsersPage: React.FC = () => {
       {/* Main Staff Data Table */}
       <Card variant="default" className="table-wrapper-card">
         <div className="table-responsive">
-          <table className="medical-table">
+          <table className="medical-table collapsible-table">
             <thead>
               <tr>
                 <th
@@ -519,7 +520,7 @@ export const UsersPage: React.FC = () => {
                 </tr>
               ) : (
                 staffList.map((staff) => (
-                  <tr key={staff.id} className="table-row-hover">
+                  <CollapsibleRow key={staff.id} className="table-row-hover" summary={staff.name}>
                     {/* Medical Staff Profile */}
                     <td>
                       <div className="staff-cell-flex">
@@ -544,7 +545,7 @@ export const UsersPage: React.FC = () => {
                     </td>
 
                     {/* Staff ID & License */}
-                    <td>
+                    <td data-label="Staff ID & License">
                       <div className="id-license-stack">
                         <span className="font-mono font-bold text-teal">{staff.staffId}</span>
                         <span className="font-mono text-xs text-muted">{staff.licenseNumber}</span>
@@ -552,7 +553,7 @@ export const UsersPage: React.FC = () => {
                     </td>
 
                     {/* Department & Bench */}
-                    <td>
+                    <td data-label="Department & Bench">
                       <div className="dept-bench-cell">
                         <span className="dept-name">{staff.department}</span>
                         <span className="bench-name">{staff.specialization}</span>
@@ -560,12 +561,12 @@ export const UsersPage: React.FC = () => {
                     </td>
 
                     {/* Role Designation */}
-                    <td>
+                    <td data-label="Role">
                       <RoleBadge role={staff.role} />
                     </td>
 
                     {/* Shift */}
-                    <td>
+                    <td data-label="Shift">
                       <div className="shift-cell">
                         <Icons.Clock size={13} className="text-muted" />
                         <span>{staff.shift.split(' ')[0]}</span>
@@ -573,7 +574,7 @@ export const UsersPage: React.FC = () => {
                     </td>
 
                     {/* Status & Quick Toggle */}
-                    <td>
+                    <td data-label="Status">
                       <div className="status-toggle-cell">
                         <button
                           type="button"
@@ -588,7 +589,7 @@ export const UsersPage: React.FC = () => {
                     </td>
 
                     {/* Action Buttons */}
-                    <td className="text-right">
+                    <td data-label="Actions" className="text-right">
                       <div className="actions-cell-group">
                         <button
                           type="button"
@@ -624,7 +625,7 @@ export const UsersPage: React.FC = () => {
                         </button>
                       </div>
                     </td>
-                  </tr>
+                  </CollapsibleRow>
                 ))
               )}
             </tbody>

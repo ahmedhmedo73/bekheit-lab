@@ -6,6 +6,7 @@ import { Icons } from '../common/Icons';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { Card } from '../common/Card';
+import { CollapsibleRow } from '../common/CollapsibleRow';
 import { PatientFormModal } from './PatientFormModal';
 import { PatientDetailsModal } from './PatientDetailsModal';
 import { DeletePatientModal } from './DeletePatientModal';
@@ -256,7 +257,7 @@ export const PatientsPage: React.FC = () => {
       {/* Main Patient Data Table */}
       <Card variant="default" className="table-wrapper-card">
         <div className="table-responsive">
-          <table className="medical-table">
+          <table className="medical-table collapsible-table">
             <thead>
               <tr>
                 <th
@@ -330,7 +331,7 @@ export const PatientsPage: React.FC = () => {
                 </tr>
               ) : (
                 patientList.map((patient) => (
-                  <tr key={patient.id} className="table-row-hover">
+                  <CollapsibleRow key={patient.id} className="table-row-hover" summary={patient.name}>
                     {/* Patient Name + ID */}
                     <td>
                       <div className="staff-cell-flex">
@@ -354,24 +355,24 @@ export const PatientsPage: React.FC = () => {
                     </td>
 
                     {/* Age */}
-                    <td>
+                    <td data-label="Age">
                       <span className="font-bold text-sm">{patient.age}</span>
                     </td>
 
                     {/* Phone Number */}
-                    <td>
+                    <td data-label="Phone Number">
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-medium text-sm">{patient.phone}</span>
                       </div>
                     </td>
 
                     {/* Job Title */}
-                    <td>
+                    <td data-label="Job Title">
                       <span className="font-medium text-sm">{patient.jobTitle || '—'}</span>
                     </td>
 
                     {/* Subtitle */}
-                    <td>
+                    <td data-label="Clinical Subtitle">
                       <div className="dept-bench-cell">
                         <span className="font-semibold text-sm text-main">{patient.subtitle}</span>
                         <span className="text-xs text-muted">Registered: {patient.registeredDate}</span>
@@ -379,8 +380,8 @@ export const PatientsPage: React.FC = () => {
                     </td>
 
                     {/* Action Buttons */}
-                    <td><span className="font-mono font-bold text-teal">{visitCounts[patient.id] ?? 0}</span></td>
-                    <td className="text-right">
+                    <td data-label="Lab Visits"><span className="font-mono font-bold text-teal">{visitCounts[patient.id] ?? 0}</span></td>
+                    <td data-label="Actions" className="text-right">
                       <div className="actions-cell-group">
                         <button
                           type="button"
@@ -416,7 +417,7 @@ export const PatientsPage: React.FC = () => {
                         </button>
                       </div>
                     </td>
-                  </tr>
+                  </CollapsibleRow>
                 ))
               )}
             </tbody>

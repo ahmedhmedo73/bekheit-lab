@@ -8,7 +8,6 @@
 .visit-status { min-width: 150px; border-radius:20px; padding:7px 12px; font-size:12px; font-weight:600; border:1px solid #cbd5e1; color:#475569; background:#f1f5f9; }
 .visit-status[data-status="New"] { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
 .visit-status[data-status="In Lab"] { background:#f5f3ff; color:#6d28d9; border-color:#ddd6fe; }
-.visit-status[data-status="Pending Results"] { background:#fffbeb; color:#b45309; border-color:#fde68a; }
 .visit-status[data-status="Completed"] { background:var(--brand-secondary-light); color:var(--brand-secondary-hover); border-color:#e3c989; }
 .visit-action-icons { display:flex; gap:6px; }
 .visit-action-icons button { width:34px; height:34px; border:1px solid var(--border-color,#e2e8f0); border-radius:8px; }

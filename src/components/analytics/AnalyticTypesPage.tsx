@@ -6,6 +6,7 @@ import { Icons } from '../common/Icons';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { Card } from '../common/Card';
+import { CollapsibleRow } from '../common/CollapsibleRow';
 import { AnalyticTypeFormModal } from './AnalyticTypeFormModal';
 import { DeleteAnalyticTypeModal } from './DeleteAnalyticTypeModal';
 import { analyticChildren } from '../../services/analyticSchema';
@@ -206,7 +207,7 @@ export const AnalyticTypesPage: React.FC = () => {
       {/* Main Data Table */}
       <Card variant="default" className="table-wrapper-card">
         <div className="table-responsive">
-          <table className="medical-table">
+          <table className="medical-table collapsible-table">
             <thead>
               <tr>
                 <th style={{ width: '60px' }}>#</th>
@@ -258,13 +259,13 @@ export const AnalyticTypesPage: React.FC = () => {
                 </tr>
               ) : (
                 paginatedTypes.map((type, idx) => (
-                  <tr key={type.id} className="table-row-hover">
+                  <CollapsibleRow key={type.id} className="table-row-hover" summary={type.name}>
                     <td>
                       <span className="font-mono text-xs text-muted">
                         {(page - 1) * pageSize + idx + 1}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Test Name">
                       <div className="staff-cell-flex">
                         <div
                           className="table-avatar"
@@ -277,7 +278,7 @@ export const AnalyticTypesPage: React.FC = () => {
                           <table className="medical-table" style={{ marginTop: 8 }}>
                             <thead><tr><th>Child Analytic</th><th>Unit</th><th>Reference Range</th></tr></thead>
                             <tbody>{analyticChildren(type).map(child => (
-                              <tr key={child.id}><td><small>{child.section}</small><div>{child.name}</div><small>{child.resultType || 'text'}</small></td><td>{child.unit || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteUnit || 'Not specified'}</div>}</td><td style={{ whiteSpace: 'pre-wrap', minWidth: 200, maxWidth: 360 }}>{child.resultType === 'differential' ? 'Relative: ' : ''}{child.referenceRange || 'Not specified'}
+                              <tr key={child.id}><td data-label="Child Analytic"><small>{child.section}</small><div>{child.name}</div><small>{child.resultType || 'text'}</small></td><td data-label="Unit">{child.unit || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteUnit || 'Not specified'}</div>}</td><td data-label="Reference Range" style={{ whiteSpace: 'pre-wrap', minWidth: 200, maxWidth: 360 }}>{child.resultType === 'differential' ? 'Relative: ' : ''}{child.referenceRange || 'Not specified'}
                                 {child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteReferenceRange || 'Not specified'}</div>}
                                 {child.referenceSource && !child.referenceSource.startsWith('https://') && <div className="text-xs text-muted">{child.referenceSource}</div>}
                                 {child.referenceSource?.startsWith('https://') && <div><a href={child.referenceSource} target="_blank" rel="noreferrer">Published source</a></div>}
@@ -288,19 +289,19 @@ export const AnalyticTypesPage: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Price">
                       <span className="font-bold text-sm text-teal font-mono">
                         {type.price.toFixed(2)} EGP
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Created">
                       <span className="text-xs text-muted">
                         {type.createdAt
                           ? new Date(type.createdAt).toLocaleDateString()
                           : '—'}
                       </span>
                     </td>
-                    <td className="text-right">
+                    <td data-label="Actions" className="text-right">
                       <div className="actions-cell-group">
                         <button
                           type="button"
@@ -325,7 +326,7 @@ export const AnalyticTypesPage: React.FC = () => {
                         </button>
                       </div>
                     </td>
-                  </tr>
+                  </CollapsibleRow>
                 ))
               )}
             </tbody>

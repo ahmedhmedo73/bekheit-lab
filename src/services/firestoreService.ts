@@ -77,7 +77,7 @@ const firestoreService = {
     await migrateLabVisits();
     const ref = collection(db, LAB_VISITS_COLLECTION);
     const snapshot = await getDocs(patientId ? query(ref, where('patientId', '==', patientId)) : ref);
-    return snapshot.docs.map(item => ({ ...item.data(), id: item.id, status: item.data().status === 'Open' ? 'New' : item.data().status } as LabVisit)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return snapshot.docs.map(item => ({ ...item.data(), id: item.id, status: item.data().status === 'Open' ? 'New' : item.data().status === 'Pending Results' ? 'In Lab' : item.data().status } as LabVisit)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
 
   async getLabVisitCounts(patientIds: string[]): Promise<Record<string, number>> {
@@ -104,10 +104,19 @@ const firestoreService = {
     return { id: ref.id, ...snapshot.data() } as LabVisit;
   },
 
-  async updateLabVisit(id: string, updates: Partial<Pick<LabVisit, 'status' | 'notes' | 'paidAmount' | 'totalAmount'>>): Promise<void> {
+  async updateLabVisit(id: string, updates: Partial<Pick<LabVisit, 'status' | 'notes' | 'paidAmount' | 'assignedAnalytics'>>): Promise<void> {
     if (!db) throw new Error('Firestore is not initialized');
     if (updates.paidAmount !== undefined && (!Number.isFinite(updates.paidAmount) || updates.paidAmount < 0)) throw new Error('Paid amount must be zero or greater.');
     if (updates.status !== undefined && !LAB_VISIT_STATUSES.includes(updates.status)) throw new Error('Choose a valid visit status.');
+    if (updates.assignedAnalytics !== undefined) {
+      const assigned = updates.assignedAnalytics;
+      if (!assigned.length || new Set(assigned.map(type => type.id)).size !== assigned.length) throw new Error('Select one or more distinct analytic types.');
+      const attached = await getDocs(query(collection(db, ANALYTIC_RESULTS_COLLECTION), where('visitId', '==', id)));
+      if (attached.docs.some(result => !assigned.some(type => type.id === result.data().analyticTypeId))) throw new Error('An analytic type with saved results cannot be removed from this visit.');
+      const totalAmount = assigned.reduce((sum, type) => sum + resultPriceCents(type.price), 0) / 100;
+      await updateDoc(doc(db, LAB_VISITS_COLLECTION, id), cleanFirestoreData({ ...updates, totalAmount, updatedAt: new Date().toISOString() }));
+      return;
+    }
     await updateDoc(doc(db, LAB_VISITS_COLLECTION, id), cleanFirestoreData({ ...updates, updatedAt: new Date().toISOString() }));
   },
 
@@ -435,7 +444,7 @@ const firestoreService = {
     await runTransaction(db, async transaction => {
       const visit = await transaction.get(visitRef);
       if (!visit.exists() || visit.data().patientId !== entries[0].patientId) throw new Error('The selected visit does not belong to this patient.');
-      if (!['Open', 'New', 'In Lab', 'Pending Results'].includes(visit.data().status)) throw new Error('Change the visit to In Lab or Pending Results before adding results.');
+      if (!['Open', 'New', 'In Lab', 'Pending Results'].includes(visit.data().status)) throw new Error('Change the visit to In Lab before adding results.');
       const assigned = visit.data().assignedAnalytics as AnalyticType[] | undefined;
       if (assigned?.length && entries.some(entry => !assigned.some(type => type.id === entry.analyticTypeId))) throw new Error('Results must belong to the analytic types assigned to this visit.');
       const timestamp = new Date().toISOString();

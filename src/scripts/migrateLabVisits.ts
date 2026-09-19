@@ -11,10 +11,17 @@ export function migrateLabVisits(): Promise<void> {
 
 async function migrate() {
   if (!db) throw new Error('Firestore is not initialized');
-  const [patients, results] = await Promise.all([
+  const [patients, results, visits] = await Promise.all([
     getDocsFromServer(collection(db, 'patients')),
     getDocsFromServer(collection(db, 'analyticResults')),
+    getDocsFromServer(collection(db, 'labVisits')),
   ]);
+  const oldStatuses = visits.docs.filter(visit => visit.data().status === 'Pending Results');
+  for (let offset = 0; offset < oldStatuses.length; offset += 450) {
+    const batch = writeBatch(db);
+    for (const visit of oldStatuses.slice(offset, offset + 450)) batch.update(visit.ref, { status: 'In Lab', updatedAt: new Date().toISOString() });
+    await batch.commit();
+  }
   const names = new Map(patients.docs.map(patient => [patient.id, String(patient.data().name ?? 'Unknown patient')]));
   const legacy = results.docs.filter(result => !result.data().visitId);
   for (let offset = 0; offset < legacy.length; offset += 250) {

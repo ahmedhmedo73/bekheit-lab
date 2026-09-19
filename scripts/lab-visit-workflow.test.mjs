@@ -34,8 +34,9 @@ function setup() {
     if (name === 'firebase/firestore') return firebase;
     if (name.includes('config/firebase')) return { db: {} };
     if (name.includes('requestActivity')) return { trackServiceRequests: value => value };
+    if (name.includes('migrateLabVisits')) return { migrateLabVisits: async () => {} };
     if (name.includes('printSelection')) return { resultPriceCents };
-    if (name.includes('types/labVisit')) return { LAB_VISIT_STATUSES: ['New', 'In Lab', 'Pending Results', 'Completed'] };
+    if (name.includes('types/labVisit')) return { LAB_VISIT_STATUSES: ['New', 'In Lab', 'Completed'] };
     return {};
   }, exports);
   return { service: exports.FirestoreService, records };
@@ -102,12 +103,37 @@ test('ordered panels are not charged again when saving, repeating or deleting re
   await service.deleteAnalyticResult(resultKey.split('/')[1]);
   assert.equal(records.get('labVisits/v').totalAmount, 10);
 });
-test('visit workflow accepts the four statuses and rejects removed statuses', async () => {
+test('visit workflow accepts three statuses and rejects removed statuses', async () => {
   const { service, records } = setup();
-  for (const status of ['New', 'In Lab', 'Pending Results', 'Completed']) {
+  for (const status of ['New', 'In Lab', 'Completed']) {
     await service.updateLabVisit('v', { status });
     assert.equal(records.get('labVisits/v').status, status);
   }
   await assert.rejects(service.updateLabVisit('v', { status: 'Open' }));
   await assert.rejects(service.updateLabVisit('v', { status: 'Cancelled' }));
+  await assert.rejects(service.updateLabVisit('v', { status: 'Pending Results' }));
+});
+
+test('historical pending visits appear as In Lab without changing stored records', async () => {
+  const { service, records } = setup();
+  records.get('labVisits/v').status = 'Pending Results';
+  records.get('labVisits/v').createdAt = '2026-09-15';
+  const visits = await service.getLabVisits();
+  assert.equal(visits[0].status, 'In Lab');
+  assert.equal(records.get('labVisits/v').status, 'Pending Results');
+});
+
+test('editing ordered analytics recalculates charges without changing payment or removing saved results', async () => {
+  const { service, records } = setup();
+  const kidney = { id: 'kidney', name: 'Kidney', price: 10.05 };
+  const cbc = { id: 'cbc', name: 'CBC', price: 20.1 };
+  records.get('labVisits/v').assignedAnalytics = [kidney];
+  records.get('labVisits/v').paidAmount = 5;
+  await service.updateLabVisit('v', { assignedAnalytics: [kidney, cbc], notes: 'Morning visit' });
+  assert.equal(records.get('labVisits/v').totalAmount, 30.15);
+  assert.equal(records.get('labVisits/v').paidAmount, 5);
+  assert.equal(records.get('labVisits/v').notes, 'Morning visit');
+  records.set('analyticResults/r', panel);
+  await assert.rejects(service.updateLabVisit('v', { assignedAnalytics: [cbc] }));
+  assert.deepEqual(records.get('labVisits/v').assignedAnalytics, [kidney, cbc]);
 });

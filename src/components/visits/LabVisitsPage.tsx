@@ -17,6 +17,8 @@ import { Card } from '../common/Card';
 import { Input } from '../common/Input';
 import { Modal } from '../common/Modal';
 import { Icons } from '../common/Icons';
+import { CollapsibleRow } from '../common/CollapsibleRow';
+import { PatientDetailsModal } from '../patients/PatientDetailsModal';
 
 const money = (amount: unknown) => `${(resultPriceCents(amount) / 100).toFixed(2)} EGP`;
 
@@ -35,6 +37,8 @@ export function LabVisitsPage() {
   const [form, setForm] = useState<LabVisit | 'new' | null>(null);
   const [resultVisit, setResultVisit] = useState<LabVisit | null>(null);
   const [printVisit, setPrintVisit] = useState<LabVisit | null>(null);
+  const [paymentVisit, setPaymentVisit] = useState<LabVisit | null>(null);
+  const [detailPatient, setDetailPatient] = useState<Patient | null>(null);
   const [deleting, setDeleting] = useState<LabVisit | null>(null);
   const [patientId, setPatientId] = useState('');
   const [notes, setNotes] = useState('');
@@ -66,29 +70,34 @@ export function LabVisitsPage() {
     finally { busyRef.current = false; setBusy(false); }
   };
   const openForm = (visit: LabVisit | 'new') => {
-    setSelectedTypeIds([]);
+    setSelectedTypeIds(visit === 'new' ? [] : visit.assignedAnalytics?.map(type => type.id) ?? []);
     setForm(visit); setPatientId(visit === 'new' ? '' : visit.patientId);
     setNotes(visit === 'new' ? '' : visit.notes ?? '');
-    setPaidAmount(visit === 'new' ? '0' : String(visit.paidAmount ?? 0));
   };
+  const openPayment = (visit: LabVisit) => { setPaymentVisit(visit); setPaidAmount(String(visit.paidAmount ?? 0)); };
   const save = () => {
     if (!form) return;
     const patient = patients.find(item => item.id === patientId);
     if (form === 'new' && !patient) return toastError('Patient Required', 'Choose a registered patient.');
     if (form === 'new' && !selectedTypeIds.length) return toastError('Analytic Types Required', 'Select at least one analytic type.');
-    const payment = Number(paidAmount);
-    if (!paidAmount.trim() || !Number.isFinite(payment) || payment < 0) return toastError('Invalid Payment', 'Enter a paid amount of zero or greater.');
+    if (form !== 'new' && form.assignedAnalytics?.length && !selectedTypeIds.length) return toastError('Analytic Types Required', 'Select at least one analytic type.');
     void runAction(async () => {
       if (form === 'new' && patient) await LabVisitService.create({ patientId: patient.id, patientName: patient.name, status: 'New', notes: notes.trim(), assignedAnalytics: types.filter(type => selectedTypeIds.includes(type.id)) });
-      else if (form !== 'new') await LabVisitService.update(form.id, { notes: notes.trim(), paidAmount: payment });
+      else if (form !== 'new') await LabVisitService.update(form.id, { notes: notes.trim(), ...(form.assignedAnalytics?.length ? { assignedAnalytics: selectedTypeIds.map(id => form.assignedAnalytics!.find(type => type.id === id) ?? types.find(type => type.id === id)!).filter(Boolean) } : {}) });
       setForm(null);
-    }, form === 'new' ? 'Visit and selected analytic types saved.' : 'Visit details and recorded payment saved.');
+    }, form === 'new' ? 'Visit and selected analytic types saved.' : 'Visit details saved.');
+  };
+  const savePayment = () => {
+    if (!paymentVisit) return;
+    const payment = Number(paidAmount);
+    if (!paidAmount.trim() || !Number.isFinite(payment) || payment < 0 || resultPriceCents(payment) / 100 !== payment) return toastError('Invalid Payment', 'Enter a paid amount of zero or greater, with at most two decimal places.');
+    void runAction(async () => { await LabVisitService.update(paymentVisit.id, { paidAmount: payment }); setPaymentVisit(null); }, 'Payment saved.');
   };
 
   return <div className="page-container visits-page">
     <div className="page-header-row"><div><h2 className="page-title">Lab Visits</h2><p className="page-subtitle">Manage results, reports, and payments for each patient visit.</p></div>
       <Button variant="medical" disabled={loading || busy || !!loadError} onClick={() => openForm('new')} leftIcon={<Icons.Plus size={16} />}>New Lab Visit</Button></div>
-    <div className="visit-summary">{LAB_VISIT_STATUSES.map(value => <div className="visit-summary-item" key={value}><span>{value}</span><strong>{visits.filter(visit => visit.status === value).length}</strong></div>)}</div>
+    <div className="visit-summary">{LAB_VISIT_STATUSES.map(value => <div className="visit-summary-item" key={value}><span>{value}</span><strong>{visits.filter(visit => visit.status === value).length}</strong></div>)}<div className="visit-summary-item"><span>Total Paid</span><strong>{money(visits.reduce((sum, visit) => sum + resultPriceCents(visit.paidAmount), 0) / 100)}</strong></div></div>
     <Card variant="bordered" style={{ padding: 16 }}>
       <div className="visit-toolbar">
         <div style={{ flex: 1, minWidth: 220 }}><Input id="visit-search" label="Find visit" value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} placeholder="Patient name, patient ID, or visit number" /></div>
@@ -96,22 +105,23 @@ export function LabVisitsPage() {
         <Button variant="outline" disabled={loading || busy} onClick={() => setRefresh(value => value + 1)}>Refresh</Button>
       </div>
       {loadError ? <div role="alert"><p>{loadError}</p><Button onClick={() => setRefresh(value => value + 1)}>Retry</Button></div> : <>
-        <div className="table-responsive"><table className="medical-table"><thead><tr><th>Visit / Date</th><th>Patient</th><th>Total</th><th>Paid</th><th>Balance / Credit</th><th>Status</th><th>Results & Actions</th></tr></thead><tbody>
-          {loading ? <tr><td colSpan={7} role="status">Loading lab visits…</td></tr> : !visible.length ? <tr><td colSpan={7}>No visits match your filters. Create a visit to begin.</td></tr> : visible.map(visit => {
+        <div className="table-responsive"><table className="medical-table collapsible-table"><thead><tr><th>Visit / Date</th><th>Patient</th><th>Total</th><th>Balance / Credit</th><th>Status</th><th>Results & Actions</th></tr></thead><tbody>
+          {loading ? <tr><td colSpan={6} role="status">Loading lab visits…</td></tr> : !visible.length ? <tr><td colSpan={6}>No visits match your filters. Create a visit to begin.</td></tr> : visible.map(visit => {
             const balance = resultPriceCents(visit.totalAmount) - resultPriceCents(visit.paidAmount);
             const patient = patientFor(visit);
-            return <tr key={visit.id}>
+            return <CollapsibleRow key={visit.id} summary={`${visit.visitNumber} · ${patientName(visit)}`}>
               <td><div className="font-mono text-teal">{visit.visitNumber}</div><small>{new Date(visit.createdAt).toLocaleString()}</small><div className="text-xs text-muted">{visit.assignedAnalytics?.map(type => type.name).join(", ")}</div></td>
-              <td><strong>{patientName(visit)}</strong><div className="text-xs text-muted">{patient?.patientId ?? 'Patient record unavailable'}</div>{visit.notes && <div className="text-xs text-muted" style={{ maxWidth: 240, whiteSpace: 'pre-wrap' }}>{visit.notes}</div>}</td>
-              <td>{money(visit.totalAmount)}</td><td>{money(visit.paidAmount)}</td><td>{money(Math.abs(balance) / 100)}<div className="text-xs text-muted">{balance < 0 ? 'Credit' : balance > 0 ? 'Due' : 'Settled'}</div></td>
-              <td><select className="visit-status" data-status={visit.status} aria-label={`Status for ${visit.visitNumber}`} disabled={busy || loading} value={visit.status} onChange={event => { const nextStatus = event.target.value as LabVisitStatus; void runAction(() => LabVisitService.update(visit.id, { status: nextStatus }), 'Visit status saved.'); }}>{!LAB_VISIT_STATUSES.includes(visit.status) && <option disabled>{visit.status}</option>}{LAB_VISIT_STATUSES.map(value => <option key={value}>{value}</option>)}</select></td>
-              <td><div className="visit-action-icons">
+              <td data-label="Patient">{patient ? <button type="button" className="staff-name-btn" onClick={() => setDetailPatient(patient)}>{patient.name}</button> : <strong>{patientName(visit)}</strong>}</td>
+              <td data-label="Total">{money(visit.totalAmount)}</td><td data-label="Balance / Credit">{money(Math.abs(balance) / 100)}<div className="text-xs text-muted">{balance < 0 ? 'Credit' : balance > 0 ? 'Due' : 'Settled'}</div></td>
+              <td data-label="Status"><select className="visit-status" data-status={visit.status} aria-label={`Status for ${visit.visitNumber}`} disabled={busy || loading} value={visit.status} onChange={event => { const nextStatus = event.target.value as LabVisitStatus; void runAction(() => LabVisitService.update(visit.id, { status: nextStatus }), 'Visit status saved.'); }}>{!LAB_VISIT_STATUSES.includes(visit.status) && <option disabled>{visit.status}</option>}{LAB_VISIT_STATUSES.map(value => <option key={value}>{value}</option>)}</select></td>
+              <td data-label="Actions"><div className="visit-action-icons">
                 <button type="button" className="action-icon-btn text-teal" title="Add analytic results" aria-label={`Add results for ${visit.visitNumber}`} disabled={busy || loading || !patient || visit.status === 'Completed' || String(visit.status) === 'Cancelled'} onClick={() => setResultVisit(visit)}><Icons.FlaskConical size={17} /></button>
                 <button type="button" className="action-icon-btn text-primary" title="Print analytic results" aria-label={`Print results for ${visit.visitNumber}`} disabled={busy || loading || !patient} onClick={() => setPrintVisit(visit)}><Icons.Printer size={17} /></button>
-                <button type="button" className="action-icon-btn text-primary" title="Edit visit and payment" aria-label={`Edit visit and payment for ${visit.visitNumber}`} disabled={busy || loading} onClick={() => openForm(visit)}><Icons.Edit size={17} /></button>
+                <button type="button" className="action-icon-btn text-teal" title="Record payment" aria-label={`Record payment for ${visit.visitNumber}`} disabled={busy || loading} onClick={() => openPayment(visit)}><Icons.DollarSign size={17} /></button>
+                <button type="button" className="action-icon-btn text-primary" title="Edit visit" aria-label={`Edit visit ${visit.visitNumber}`} disabled={busy || loading} onClick={() => openForm(visit)}><Icons.Edit size={17} /></button>
                 <button type="button" className="action-icon-btn text-danger" title="Delete visit" aria-label={`Delete ${visit.visitNumber}`} disabled={busy || loading} onClick={() => setDeleting(visit)}><Icons.Trash2 size={17} /></button>
               </div></td>
-            </tr>;
+            </CollapsibleRow>;
           })}
         </tbody></table></div>
         <div className="table-pagination-footer"><span>{filtered.length} visits · Page {currentPage} of {pages}</span><div className="flex gap-2"><Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Previous</Button><Button variant="outline" size="sm" disabled={currentPage === pages} onClick={() => setPage(currentPage + 1)}>Next</Button></div></div>
@@ -123,11 +133,17 @@ export function LabVisitsPage() {
         <AnalyticTypePicker types={types} selectedIds={selectedTypeIds} onChange={setSelectedTypeIds} disabled={busy} />
       </> : form && <>
         <p className="form-label">{patientName(form)} · {form.visitNumber}</p>
-        <div className="visit-total"><span>Visit Total</span><strong>{money(form.totalAmount)}</strong></div>
-        <Input id="visit-payment" label="Total Paid to Date (EGP)" helperText="Enter the total received for this visit, including earlier payments." type="number" min="0" step="0.01" disabled={busy} value={paidAmount} onChange={event => setPaidAmount(event.target.value)} />
+        {form.assignedAnalytics?.length ? <AnalyticTypePicker types={[...form.assignedAnalytics, ...types.filter(type => !form.assignedAnalytics?.some(ordered => ordered.id === type.id))]} selectedIds={selectedTypeIds} onChange={setSelectedTypeIds} disabled={busy} /> : <p className="text-sm text-muted">Legacy visit: ordered analytics are unavailable. Existing charges are preserved; notes can still be edited.</p>}
       </>}
       <label htmlFor="visit-notes">Visit notes</label><textarea id="visit-notes" className="form-input" rows={4} disabled={busy} value={notes} onChange={event => setNotes(event.target.value)} />
     </Modal>
+    <Modal isOpen={!!paymentVisit} onClose={() => { if (!busy) setPaymentVisit(null); }} title={`Payment · ${paymentVisit?.visitNumber ?? ''}`} footer={<div className="modal-footer-actions"><Button variant="outline" disabled={busy} onClick={() => setPaymentVisit(null)}>Cancel</Button><Button variant="medical" disabled={busy} isLoading={busy} onClick={savePayment}>Save Payment</Button></div>}>
+      <p className="text-sm text-muted">{paymentVisit && patientName(paymentVisit)}</p>
+      <div className="visit-total"><span>Visit Total</span><strong>{money(paymentVisit?.totalAmount)}</strong></div>
+      <Input id="visit-payment" label="Paid to Date (EGP)" helperText="Cumulative amount received, including earlier payments." type="number" min="0" step="0.01" disabled={busy} value={paidAmount} onChange={event => setPaidAmount(event.target.value)} />
+      <Input id="visit-credit" label={paymentVisit && Number(paidAmount) > paymentVisit.totalAmount ? 'Patient Credit (EGP)' : 'Credit Due (EGP)'} type="text" readOnly value={paymentVisit && Number.isFinite(Number(paidAmount)) ? money(Math.abs(resultPriceCents(paymentVisit.totalAmount) - resultPriceCents(Number(paidAmount))) / 100) : '—'} />
+    </Modal>
+    <PatientDetailsModal isOpen={!!detailPatient} onClose={() => setDetailPatient(null)} patient={detailPatient} />
     <Modal isOpen={!!deleting} onClose={() => { if (!busy) setDeleting(null); }} title={<span>Delete lab visit</span>} footer={<div className="modal-footer-actions"><Button variant="outline" disabled={busy} onClick={() => setDeleting(null)}>Keep Visit</Button><Button variant="danger" disabled={busy} isLoading={busy} onClick={() => deleting && void runAction(async () => { await LabVisitService.delete(deleting.id); setDeleting(null); }, 'Empty visit deleted.')}>Delete Visit</Button></div>}>
       <p>Delete {deleting?.visitNumber}? Only visits without saved results or recorded payments can be deleted.</p>
     </Modal>
