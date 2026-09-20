@@ -7,9 +7,9 @@ export interface Patient {
   age: number;
   phone: string;
   jobTitle: string;
-  subtitle: string; // Clinical subtitle / diagnosis / referral note
+  subtitle?: string; // Legacy data, retained for existing Firestore records
   gender?: 'Male' | 'Female' | 'Other';
-  status: PatientStatus;
+  status?: PatientStatus; // Legacy patient intake status
   registeredDate: string;
   avatarColor?: string;
   notes?: string;
@@ -18,7 +18,7 @@ export interface Patient {
   updatedAt?: string;
 }
 
-export type PatientFormData = Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>;
+export type PatientFormData = Omit<Patient, 'id' | 'createdAt' | 'updatedAt' | 'subtitle' | 'status'>;
 
 export interface PatientFilterOptions {
   search: string;

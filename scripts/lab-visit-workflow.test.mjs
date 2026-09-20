@@ -69,17 +69,19 @@ test('deleting a result adjusts charges while preserving recorded payment', asyn
   assert.equal(records.get('labVisits/v').paidAmount, 10);
   assert.equal(records.has('analyticResults/r'), false);
 });
-test('visits with results or payments cannot be deleted; empty visits can', async () => {
+test('deleting a visit atomically removes its results and payment while preserving other visits', async () => {
   const { service, records } = setup();
-  records.get('labVisits/v').totalAmount = 0;
+  records.get('labVisits/v').updatedAt = '2026-09-19';
+  records.get('labVisits/v').paidAmount = 10;
   records.set('analyticResults/r', panel);
-  await assert.rejects(service.deleteLabVisit('v'));
-  records.delete('analyticResults/r');
-  records.get('labVisits/v').paidAmount = 1;
-  await assert.rejects(service.deleteLabVisit('v'));
-  records.get('labVisits/v').paidAmount = 0;
-  await service.deleteLabVisit('v');
+  records.set('labVisits/other', { patientId: 'p', paidAmount: 4 });
+  records.set('analyticResults/other', { ...panel, visitId: 'other' });
+  assert.equal(await service.deleteLabVisit('v'), true);
   assert.equal(records.has('labVisits/v'), false);
+  assert.equal(records.has('analyticResults/r'), false);
+  assert.equal(records.has('labVisits/other'), true);
+  assert.equal(records.has('analyticResults/other'), true);
+  assert.equal(await service.deleteLabVisit('v'), false);
 });
 test('new visits calculate charges from chosen panels and start unpaid', async () => {
   const { service } = setup();

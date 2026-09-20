@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { Patient } from '../../types/patient';
+import type { AnalyticType } from '../../types/analyticType';
 import { PatientService } from '../../services/patientService';
+import { AnalyticTypeService } from '../../services/analyticTypeService';
 import { useToast } from '../../context/ToastContext';
 import { AddAnalyticResultModal } from './AddAnalyticResultModal';
 import { PatientResultsModal } from './PatientResultsModal';
@@ -8,6 +10,8 @@ import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { Input } from '../common/Input';
 import { Icons } from '../common/Icons';
+import { AnalyticTypePicker } from '../visits/AnalyticTypePicker';
+import '../visits/LabVisitsPage.css';
 
 interface AnalyticResultsPageProps {
   initialPatient?: Patient | null;
@@ -21,6 +25,16 @@ export const AnalyticResultsPage: React.FC<AnalyticResultsPageProps> = ({ initia
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [viewingHistory, setViewingHistory] = useState(false);
+  const [analyticTypes, setAnalyticTypes] = useState<AnalyticType[]>([]);
+  const [selectedTypeIds, setSelectedTypeIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    AnalyticTypeService.getAll()
+      .then(types => { if (active) setAnalyticTypes(types); })
+      .catch(() => { if (active) toastError('Catalog Unavailable', 'Could not load analytic types. Please refresh the page.'); });
+    return () => { active = false; };
+  }, [toastError]);
 
   useEffect(() => {
     let active = true;
@@ -40,6 +54,7 @@ export const AnalyticResultsPage: React.FC<AnalyticResultsPageProps> = ({ initia
     if (!query) return patients;
     return patients.filter(patient => [patient.name, patient.patientId, patient.phone].some(value => value?.toLowerCase().includes(query)));
   }, [patients, search]);
+  const selectedAnalytics = useMemo(() => analyticTypes.filter(type => selectedTypeIds.includes(type.id)), [analyticTypes, selectedTypeIds]);
 
   return <div className="page-container">
     <div className="page-header">
@@ -68,16 +83,17 @@ export const AnalyticResultsPage: React.FC<AnalyticResultsPageProps> = ({ initia
         <div>
           <div className="text-xs text-muted">Selected patient</div>
           <h3 className="font-bold text-lg text-main">{selectedPatient.name} <span className="font-mono text-sm text-teal">{selectedPatient.patientId}</span></h3>
-          <p className="text-sm text-muted">Add as many analytic types as needed in one entry. Saving again creates another dated result set for the same patient.</p>
+          <p className="text-sm text-muted">Choose analytic types below, then enter their results. Saving again creates another dated result set for the same patient.</p>
         </div>
         <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
           <Button type="button" variant="outline" onClick={() => setViewingHistory(true)} leftIcon={<Icons.ClipboardList size={16} />}>View Result History</Button>
-          <Button type="button" variant="medical" onClick={() => setAdding(true)} leftIcon={<Icons.FlaskConical size={16} />}>Add Analytic Results</Button>
+          <Button type="button" variant="medical" disabled={selectedAnalytics.length === 0} onClick={() => setAdding(true)} leftIcon={<Icons.FlaskConical size={16} />}>Add Analytic Results</Button>
         </div>
       </div>
+      <div style={{ marginTop: '1.25rem' }}><AnalyticTypePicker types={analyticTypes} selectedIds={selectedTypeIds} onChange={setSelectedTypeIds} disabled={loading} /></div>
     </Card>}
 
-    <AddAnalyticResultModal isOpen={adding} onClose={() => setAdding(false)} patient={selectedPatient} />
+    <AddAnalyticResultModal isOpen={adding} onClose={() => setAdding(false)} patient={selectedPatient} assignedAnalytics={selectedAnalytics} />
     <PatientResultsModal isOpen={viewingHistory} onClose={() => setViewingHistory(false)} patient={selectedPatient} />
   </div>;
 };

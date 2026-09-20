@@ -1,16 +1,14 @@
 import React from 'react';
-import type { Patient, PatientStatus } from '../../types/patient';
+import type { Patient } from '../../types/patient';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Icons } from '../common/Icons';
-import { Badge } from '../common/Badge';
 
 interface PatientDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   patient: Patient | null;
   onEdit?: (patient: Patient) => void;
-  onStatusChange?: (patient: Patient, newStatus: PatientStatus) => void;
 }
 
 export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
@@ -18,24 +16,8 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
   onClose,
   patient,
   onEdit,
-  onStatusChange,
 }) => {
   if (!patient) return null;
-
-  const getStatusBadge = (status: Patient['status']) => {
-    switch (status) {
-      case 'Active':
-        return <Badge variant="teal" dot size="sm">Active (In Lab)</Badge>;
-      case 'Pending Results':
-        return <Badge variant="warning" dot size="sm">Pending Results</Badge>;
-      case 'Urgent / STAT':
-        return <Badge variant="danger" dot size="sm">STAT Urgent</Badge>;
-      case 'Completed':
-        return <Badge variant="success" dot size="sm">Completed</Badge>;
-      default:
-        return <Badge variant="neutral" size="sm">{status}</Badge>;
-    }
-  };
 
   return (
     <Modal
@@ -52,7 +34,6 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
           </div>
           <div>
             <h3 className="modal-title">{patient.name}</h3>
-            <span className="text-muted text-sm">{patient.subtitle}</span>
           </div>
         </div>
       }
@@ -77,49 +58,7 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
       }
     >
       <div className="staff-dossier-grid">
-        <div className="dossier-top-bar">
-          <div className="dossier-tag">
-            <span className="tag-title">Patient Status</span>
-            {onStatusChange ? (
-              <select
-                value={patient.status}
-                onChange={(e) => onStatusChange(patient, e.target.value as PatientStatus)}
-                style={{
-                  backgroundColor:
-                    patient.status === 'Active'
-                      ? 'var(--brand-secondary-light)'
-                      : patient.status === 'Pending Results'
-                      ? 'rgba(217, 119, 6, 0.12)'
-                      : patient.status === 'Urgent / STAT'
-                      ? 'rgba(239, 68, 68, 0.12)'
-                      : 'rgba(16, 185, 129, 0.12)',
-                  color:
-                    patient.status === 'Active'
-                      ? 'var(--brand-secondary-hover)'
-                      : patient.status === 'Pending Results'
-                      ? '#d97706'
-                      : patient.status === 'Urgent / STAT'
-                      ? '#ef4444'
-                      : '#10b981',
-                  border: '1px solid currentColor',
-                  borderRadius: '9999px',
-                  padding: '3px 12px',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  outline: 'none',
-                }}
-                title="Change status"
-              >
-                <option value="Active">Active (In Lab)</option>
-                <option value="Pending Results">Pending Results</option>
-                <option value="Urgent / STAT">STAT Urgent</option>
-                <option value="Completed">Completed</option>
-              </select>
-            ) : (
-              getStatusBadge(patient.status)
-            )}
-          </div>
+        <div className="dossier-top-bar patient-dossier-top-bar">
           <div className="dossier-tag">
             <span className="tag-title">Age</span>
             <span className="tag-val font-bold">{patient.age} Years Old</span>
@@ -131,16 +70,6 @@ export const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
           <div className="dossier-tag">
             <span className="tag-title">Patient ID</span>
             <span className="tag-val font-mono">{patient.patientId}</span>
-          </div>
-        </div>
-
-        <div className="dossier-card">
-          <h4 className="dossier-card-title">
-            <Icons.FileText size={16} />
-            <span>Clinical Subtitle & Requisition</span>
-          </h4>
-          <div className="p-3 bg-teal-light rounded-md border border-teal-subtle">
-            <p className="text-sm font-semibold text-teal">{patient.subtitle}</p>
           </div>
         </div>
 

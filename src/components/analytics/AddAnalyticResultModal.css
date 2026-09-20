@@ -1,0 +1,29 @@
+.result-modal-content { gap: 0; }
+.result-section-title { margin: 0 0 0.75rem; }
+.result-section-count { margin-left: auto; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.result-entry-list { display: flex; flex-direction: column; gap: 1rem; }
+.result-empty-state { display: flex; flex-direction: column; align-items: center; gap: .35rem; padding: 2rem 1rem; color: var(--text-muted); text-align: center; background: #f8fafc; border: 1px dashed var(--border-subtle); border-radius: .875rem; }
+.result-empty-state strong { color: var(--text-main); font-size: .875rem; }
+.result-empty-state span { font-size: .8125rem; }
+.result-entry-card { overflow: hidden; border: 1px solid var(--border-subtle); border-radius: .875rem; background: #fff; }
+.result-entry-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .875rem 1rem; background: #f8fafc; border-bottom: 1px solid var(--border-subtle); }
+.result-entry-header > div { min-width: 0; }
+.result-entry-progress { display: block; margin-top: .2rem; color: var(--text-muted); font-size: .75rem; }
+.result-entry-body { padding: .25rem 1rem 1rem; }
+.result-subsection { margin: 1rem 0 .25rem; color: var(--brand-primary); font-size: .8125rem; font-weight: 700; }
+.result-value-row { padding: .875rem 0; border-bottom: 1px solid var(--border-subtle); }
+.result-value-row .form-group { margin-bottom: .3rem; }
+.result-value-row textarea { width: 100%; }
+.result-value-row label { display: inline-block; margin-bottom: .3rem; font-size: .8125rem; font-weight: 600; }
+.result-value-row.is-complete { border-left: 3px solid var(--brand-secondary); padding-left: .75rem; }
+.result-value-reference { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin: .35rem 0 0; color: var(--text-muted); font-size: .75rem; white-space: pre-wrap; }
+.result-entry-comment { padding-top: 1rem; }
+.result-entry-comment textarea { display: block; width: 100%; resize: vertical; }
+.result-modal-footer { align-items: center; flex-wrap: wrap; }
+.result-modal-footer-summary { display: flex; flex-direction: column; margin-right: auto; color: var(--text-main); font-size: .8125rem; }
+.result-modal-footer-summary span { color: var(--text-muted); font-size: .75rem; }
+@media (max-width: 640px) {
+  .result-modal-footer-summary { flex-basis: 100%; }
+  .result-modal-footer .btn { flex: 1; }
+  .result-entry-header { align-items: flex-start; }
+}

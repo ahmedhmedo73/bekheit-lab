@@ -2058,6 +2058,10 @@ a:hover {
   border-radius: var(--radius-lg);
 }
 
+.patient-dossier-top-bar {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .dossier-tag {
   display: flex;
   flex-direction: column;
@@ -2589,6 +2593,10 @@ a:hover {
   }
 
   .dossier-top-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .patient-dossier-top-bar {
     grid-template-columns: repeat(2, 1fr);
   }
 

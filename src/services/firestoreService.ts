@@ -122,13 +122,18 @@ const firestoreService = {
 
   async deleteLabVisit(id: string): Promise<boolean> {
     if (!db) throw new Error('Firestore is not initialized');
-    const attached = await getDocs(query(collection(db, ANALYTIC_RESULTS_COLLECTION), where('visitId', '==', id)));
-    if (!attached.empty) throw new Error('This visit has saved results and cannot be deleted.');
     const ref = doc(db, LAB_VISITS_COLLECTION, id);
+    const before = await getDoc(ref);
+    if (!before.exists()) return false;
+    const attached = await getDocs(query(collection(db, ANALYTIC_RESULTS_COLLECTION), where('visitId', '==', id)));
+    if (attached.docs.length > 450) throw new Error('This visit has too many results to delete in one operation.');
     await runTransaction(db, async transaction => {
       const current = await transaction.get(ref);
-      if (!current.exists()) return;
-      if (Number(current.data().paidAmount) > 0) throw new Error('This visit has recorded payments and cannot be deleted.');
+      if (!current.exists() || current.data().updatedAt !== before.data().updatedAt) throw new Error('The visit changed while deleting. Refresh and try again.');
+      const results = await Promise.all(attached.docs.map(item => transaction.get(item.ref)));
+      for (const result of results) {
+        if (result.exists() && result.data().visitId === id) transaction.delete(result.ref);
+      }
       transaction.delete(ref);
     });
     return true;
@@ -280,8 +285,7 @@ const firestoreService = {
             p.name?.toLowerCase().includes(searchLower) ||
             p.patientId?.toLowerCase().includes(searchLower) ||
             p.phone?.toLowerCase().includes(searchLower) ||
-            p.jobTitle?.toLowerCase().includes(searchLower) ||
-            p.subtitle?.toLowerCase().includes(searchLower)
+            p.jobTitle?.toLowerCase().includes(searchLower)
         );
       }
       

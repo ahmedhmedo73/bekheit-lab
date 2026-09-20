@@ -1,6 +1,7 @@
 import { flaggedResult } from './resultFlag.ts';
 import type { Patient } from '../types/patient';
 import type { AnalyticResult, ChildAnalyticResult } from '../types/analyticType';
+import { hasAnalyticResultValue } from './analyticValues.ts';
 
 const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
 
@@ -42,17 +43,18 @@ function renderResultTables(children: ChildAnalyticResult[], panelName: string, 
   }).join('');
 }
 
-export function buildAnalyticReport(patient: Patient, results: AnalyticResult[], options: { logoUrl?: string; watermark?: boolean } = {}): string {
+export function buildAnalyticReport(patient: Patient, results: AnalyticResult[], options: { logoUrl?: string; watermark?: boolean; history?: AnalyticResult[] } = {}): string {
   const panels = latestPanelResults(results);
+  const history = options.history ?? results;
   const logoUrl = escapeHtml(options.logoUrl || 'bakhet-logo.png');
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lab Report — ${escapeHtml(patient.name)}</title>
 <style>
-  @page { size: A4 portrait; margin: 15mm 12mm; }
+  @page { size: A4 portrait; margin: 0; }
   * { box-sizing: border-box; }
   body { margin: 0; color: #000; background: white; font-family: "Times New Roman", Times, serif; }
-  .report-page { position: relative; isolation: isolate; min-height: 267mm; display: flex; flex-direction: column; break-after: page; }
+  .report-page { position: relative; isolation: isolate; min-height: 297mm; padding: 15mm 12mm; display: flex; flex-direction: column; break-after: page; }
   .report-page > :not(.watermark) { position: relative; z-index: 1; }
   .watermark { position: absolute; z-index: 0; top: 65mm; left: 50%; transform: translateX(-50%); width: 145mm; height: 145mm; object-fit: contain; opacity: 0.16; pointer-events: none; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .report-page:last-child { break-after: auto; }
@@ -80,15 +82,21 @@ export function buildAnalyticReport(patient: Patient, results: AnalyticResult[],
   thead { display: table-header-group; }
   tr { break-inside: avoid; }
   .notes { font-size: 9pt; white-space: pre-wrap; margin: 5mm 1.5mm; overflow-wrap: anywhere; }
+  .previous-title { margin: 5mm 0 2mm; text-align: center; text-decoration: underline; font-size: 11pt; }
+  .previous-results th { text-align: left; padding: 1mm 1.5mm; border-bottom: 0.4pt solid #555; font-size: 9pt; }
+  .previous-results td { padding: 1mm 1.5mm; font-size: 9pt; vertical-align: top; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .previous-results { margin-bottom: 3mm; }
   .rule { border: 0; border-top: 0.7pt solid #000; margin: 6mm 0 0; }
   .signatures { margin-top: auto; padding: 20mm 12mm 5mm; display: flex; justify-content: space-between; font-size: 11pt; font-weight: bold; font-style: italic; break-inside: avoid; }
+  @media print { .report-page { width: 210mm; } }
   @media screen { body { background: #eee; padding: 20px; } .report-page { width: 210mm; min-height: 297mm; padding: 15mm 12mm; margin: 0 auto 20px; background: white; box-shadow: 0 1px 8px #ccc; } }
 </style></head><body>
 ${panels.map(result => {
-  const children = result.children ?? [{ id: 'legacy', name: result.analyticTypeName, result: result.result, unit: '', referenceRange: '' }];
+  const children = (result.children ?? [{ id: 'legacy', name: result.analyticTypeName, result: result.result, unit: '', referenceRange: '' }]).filter(hasAnalyticResultValue);
+  const previous = history.filter(item => item.id !== result.id && item.analyticTypeId === result.analyticTypeId && (!patient.id || item.patientId === patient.id) && (!item.createdAt || !result.createdAt || item.createdAt < result.createdAt) && (item.children?.length ? item.children.some(hasAnalyticResultValue) : Boolean(item.result?.trim()))).sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
   return `<section class="report-page">
     ${options.watermark ? `<img class="watermark" src="${logoUrl}" alt="" aria-hidden="true">` : ''}
-    <header class="report-header"><img class="report-logo" src="${logoUrl}" alt="Bakhet Medical Laboratory logo"><p class="lab-name">BAKHET MEDICAL LABORATORY</p></header>
+    <header class="report-header">${options.watermark ? `<img class="report-logo" src="${logoUrl}" alt="Bakhet Medical Laboratory logo"> <p class="lab-name">BAKHET MEDICAL LABORATORY</p>` : `` }</header>
     <table class="patient-info" aria-label="Patient details"><tbody>
       <tr><th>Name</th><td dir="auto">${escapeHtml(patient.name)}</td><th>Patient ID</th><td>${escapeHtml(patient.patientId)}</td></tr>
       <tr><th>Sex</th><td>${escapeHtml(patient.gender || '—')}</td><th>Age</th><td>${escapeHtml(patient.age)} Y</td></tr>
@@ -99,6 +107,7 @@ ${panels.map(result => {
     ${renderResultTables(children, result.analyticTypeName, patient.gender)}
     ${result.generalComment ? `<p class="notes"><strong>General Comment:</strong> ${escapeHtml(result.generalComment)}</p>` : ''}
     ${result.notes ? `<p class="notes"><strong>Notes:</strong> ${escapeHtml(result.notes)}</p>` : ''}
+    ${previous.length ? `<h3 class="previous-title">Previous Test Results</h3><table class="previous-results" aria-label="Previous results for ${escapeHtml(result.analyticTypeName)}"><colgroup><col style="width:45%"><col style="width:27%"><col style="width:28%"></colgroup><thead><tr><th>Test</th><th>Result</th><th>Result Date</th></tr></thead><tbody>${previous.flatMap(item => (item.children?.length ? item.children : [{ id: 'legacy', name: item.analyticTypeName, result: item.result, unit: '', referenceRange: '' }]).filter(hasAnalyticResultValue).map(child => `<tr><td>${escapeHtml(child.name)}</td><td>${escapeHtml(child.result)}${child.unit ? ` ${escapeHtml(child.unit)}` : ''}${child.resultType === 'differential' && child.absoluteEnabled && child.absoluteResult ? `<br>Absolute: ${escapeHtml(child.absoluteResult)} ${escapeHtml(child.absoluteUnit || '')}` : ''}</td><td>${escapeHtml(formatDate(item.createdAt))}</td></tr>`)).join('')}</tbody></table>` : ''}
     <hr class="rule"><footer class="signatures"><span>Lab Manager</span><span>Signature</span></footer>
   </section>`;
 }).join('')}

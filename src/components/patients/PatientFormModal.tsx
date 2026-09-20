@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Patient, PatientFormData, PatientStatus } from '../../types/patient';
+import type { Patient, PatientFormData } from '../../types/patient';
 import { Modal } from '../common/Modal';
 import { Input } from '../common/Input';
 import { Select } from '../common/Select';
@@ -12,13 +12,6 @@ interface PatientFormModalProps {
   onSubmit: (data: PatientFormData) => void;
   editingPatient?: Patient | null;
 }
-
-const STATUSES: { value: PatientStatus; label: string }[] = [
-  { value: 'Active', label: 'Active - In Processing' },
-  { value: 'Pending Results', label: 'Pending Analyzer Results' },
-  { value: 'Urgent / STAT', label: 'Urgent / STAT Priority' },
-  { value: 'Completed', label: 'Completed & Released' },
-];
 
 const GENDERS = ['Male', 'Female', 'Other'];
 
@@ -34,9 +27,7 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({
     age: 30,
     phone: '',
     jobTitle: '',
-    subtitle: '',
     gender: 'Male',
-    status: 'Active',
     registeredDate: new Date().toISOString().split('T')[0],
     notes: '',
   });
@@ -51,9 +42,7 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({
         age: editingPatient.age,
         phone: editingPatient.phone,
         jobTitle: editingPatient.jobTitle || '',
-        subtitle: editingPatient.subtitle,
         gender: editingPatient.gender || 'Male',
-        status: editingPatient.status,
         registeredDate: editingPatient.registeredDate,
         notes: editingPatient.notes || '',
       });
@@ -64,9 +53,7 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({
         age: 30,
         phone: '',
         jobTitle: '',
-        subtitle: '',
         gender: 'Male',
-        status: 'Active',
         registeredDate: new Date().toISOString().split('T')[0],
         notes: '',
       });
@@ -93,9 +80,6 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({
       newErrors.age = 'Please enter a valid age (0-130).';
     }
     if (!formData.phone.trim()) newErrors.phone = 'Phone number is required.';
-    if (!formData.subtitle.trim()) {
-      newErrors.subtitle = 'Subtitle (diagnosis, tests, or clinical reason) is required.';
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -121,7 +105,7 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({
       subtitle={
         editingPatient
           ? `Modifying patient intake details for ${editingPatient.name} (${editingPatient.patientId})`
-          : 'Enter patient information and clinical subtitle for lab intake.'
+          : 'Enter patient information for lab registration.'
       }
       footer={
         <div className="modal-footer-actions">
@@ -200,29 +184,10 @@ export const PatientFormModal: React.FC<PatientFormModalProps> = ({
 
         <div className="form-section-title mt-4">
           <Icons.FileText size={16} />
-          <span>2. Clinical Subtitle & Test Requisition</span>
+          <span>2. Additional Information</span>
         </div>
 
         <div className="form-group">
-          <Input
-            label="Subtitle (Clinical Reason / Test Package / Diagnosis)"
-            placeholder="e.g. Routine CBC & Lipid Profile / Referred by Dr. Sameh"
-            value={formData.subtitle}
-            onChange={(e) => handleChange('subtitle', e.target.value)}
-            error={errors.subtitle}
-            required
-            leftIcon={<Icons.TestTube size={16} />}
-          />
-        </div>
-
-        <div className="form-row-2">
-          <Select
-            label="Specimen Intake Status"
-            value={formData.status}
-            onChange={(e) => handleChange('status', e.target.value as PatientStatus)}
-            options={STATUSES}
-            required
-          />
           <Select
             label="Gender"
             value={formData.gender || 'Male'}

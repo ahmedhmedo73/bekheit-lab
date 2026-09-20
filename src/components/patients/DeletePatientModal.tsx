@@ -63,9 +63,6 @@ export const DeletePatientModal: React.FC<DeletePatientModalProps> = ({
           <div className="text-xs font-mono text-teal mt-1">
             Patient ID: {patient.patientId}
           </div>
-          <div className="text-xs text-muted mt-1 italic">
-            "{patient.subtitle}"
-          </div>
         </div>
       </div>
     </Modal>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import type { Patient, PatientFormData, PatientStatus, PatientFilterOptions } from '../../types/patient';
+import type { Patient, PatientFormData, PatientFilterOptions } from '../../types/patient';
 import { PatientService } from '../../services/patientService';
 import { useToast } from '../../context/ToastContext';
 import { Icons } from '../common/Icons';
@@ -106,15 +106,13 @@ export const PatientsPage: React.FC = () => {
 
   const handleExportCSV = async () => {
     const all = await PatientService.getAllPatients();
-    const headers = ['Patient ID', 'Name', 'Age', 'Phone', 'Subtitle', 'Gender', 'Status', 'Registered Date'];
+    const headers = ['Patient ID', 'Name', 'Age', 'Phone', 'Gender', 'Registered Date'];
     const rows = all.map((p) => [
       p.patientId,
       `"${p.name}"`,
       p.age,
       p.phone,
-      `"${p.subtitle}"`,
       p.gender || '',
-      p.status,
       p.registeredDate,
     ]);
 
@@ -129,21 +127,6 @@ export const PatientsPage: React.FC = () => {
     success('CSV Export Generated', 'Patient directory downloaded successfully.');
   };
 
-  const handleStatusChange = async (patient: Patient, newStatus: PatientStatus) => {
-    if (patient.status === newStatus) return;
-    try {
-      await PatientService.updatePatientStatus(patient.id, newStatus);
-      success('Status Updated', `${patient.name}'s status changed to "${newStatus}".`);
-      refreshList();
-      if (selectedPatientForDetails && selectedPatientForDetails.id === patient.id) {
-        setSelectedPatientForDetails({ ...selectedPatientForDetails, status: newStatus });
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Could not update status.';
-      toastError('Update Failed', message);
-    }
-  };
-
   return (
     <div className="users-page">
       {/* Page Header */}
@@ -151,7 +134,7 @@ export const PatientsPage: React.FC = () => {
         <div>
           <h1 className="page-title">Patient Records & Diagnostic Intake</h1>
           <p className="page-subtitle">
-            Manage patient demographics, age, contact numbers, and clinical test subtitles.
+            Manage patient demographics, contact details, and lab visit history.
           </p>
         </div>
 
@@ -199,7 +182,7 @@ export const PatientsPage: React.FC = () => {
         <div className="toolbar-grid" style={{ gridTemplateColumns: '1fr' }}>
           <div className="search-field-wrap">
             <Input
-              placeholder="Search by patient ID, patient name, phone, job title or subtitle..."
+              placeholder="Search by patient ID, patient name, phone, or job title..."
               value={filterOptions.search}
               onChange={(e) =>
                 setFilterOptions((prev) => ({ ...prev, search: e.target.value, page: 1 }))
@@ -292,7 +275,6 @@ export const PatientsPage: React.FC = () => {
                 </th>
                 <th>Phone Number</th>
                 <th>Job Title</th>
-                <th>Clinical Subtitle</th>
                 <th>Lab Visits</th>
                 <th className="text-right">Actions</th>
               </tr>
@@ -300,7 +282,7 @@ export const PatientsPage: React.FC = () => {
             <tbody>
               {patientList.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="table-empty-cell">
+                  <td colSpan={6} className="table-empty-cell">
                     <div className="empty-state-box">
                       <div className="empty-icon-wrap">
                         <Icons.Users size={36} className="text-muted" />
@@ -369,14 +351,6 @@ export const PatientsPage: React.FC = () => {
                     {/* Job Title */}
                     <td data-label="Job Title">
                       <span className="font-medium text-sm">{patient.jobTitle || '—'}</span>
-                    </td>
-
-                    {/* Subtitle */}
-                    <td data-label="Clinical Subtitle">
-                      <div className="dept-bench-cell">
-                        <span className="font-semibold text-sm text-main">{patient.subtitle}</span>
-                        <span className="text-xs text-muted">Registered: {patient.registeredDate}</span>
-                      </div>
                     </td>
 
                     {/* Action Buttons */}
@@ -489,7 +463,6 @@ export const PatientsPage: React.FC = () => {
           setSelectedPatientForEdit(patient);
           setIsFormModalOpen(true);
         }}
-        onStatusChange={handleStatusChange}
       />
 
       {/* Delete Confirmation Modal */}

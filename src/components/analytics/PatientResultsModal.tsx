@@ -9,7 +9,8 @@ import { Icons } from '../common/Icons';
 import { CollapsibleRow } from '../common/CollapsibleRow';
 import { buildAnalyticReport, latestPanelResults } from '../../services/analyticReport';
 import { resultMigration } from '../../services/analyticSchema';
-import { selectedResultTotal, resultPriceCents, togglePrintResult } from '../../services/printSelection';
+import { hasAnalyticResultValue } from '../../services/analyticValues';
+import { togglePrintResult } from '../../services/printSelection';
 import { useToast } from '../../context/ToastContext';
 
 
@@ -27,6 +28,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
   visitId,
 }) => {
   const [results, setResults] = useState<AnalyticResult[]>([]);
+  const [history, setHistory] = useState<AnalyticResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loadError, setLoadError] = useState('');
@@ -41,12 +43,14 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
     if (isOpen && patient) {
       setLoading(true);
       setResults([]);
+      setHistory([]);
       setSelectedIds([]);
       setLoadError('');
       setDeletingResult(null);
       AnalyticResultService.getByPatientId(patient.id)
         .then(data => {
           if (!active) return;
+          setHistory(data);
           if (visitId) data = data.filter(result => result.visitId === visitId);
           setResults(data);
           setSelectedIds(latestPanelResults(data).map(result => result.id));
@@ -60,7 +64,6 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
   if (!patient) return null;
 
   const selectedResults = results.filter(result => selectedIds.includes(result.id));
-  const totalPrice = selectedResultTotal(selectedResults);
   const latestIds = new Set(latestPanelResults(results).map(result => result.id));
 
   const handleDelete = async () => {
@@ -70,6 +73,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
       const removed = await AnalyticResultService.delete(deletingResult.id);
       if (!removed) throw new Error('The result was not deleted.');
       setResults(previous => previous.filter(result => result.id !== deletingResult.id));
+      setHistory(previous => previous.filter(result => result.id !== deletingResult.id));
       setSelectedIds(previous => previous.filter(id => id !== deletingResult.id));
       setDeletingResult(null);
       success('Result Deleted', 'The saved analytic result has been removed.');
@@ -88,7 +92,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
     setPrinting(true);
     try {
       const logoUrl = new URL(`${import.meta.env.BASE_URL}bakhet-logo.png`, window.location.origin).href;
-      printWindow.document.write(buildAnalyticReport(patient, selectedResults, { logoUrl, watermark }));
+      printWindow.document.write(buildAnalyticReport(patient, selectedResults, { logoUrl, watermark, history }));
       printWindow.document.close();
       await Promise.all(Array.from(printWindow.document.images, image => image.decode()));
       await printWindow.document.fonts.ready;
@@ -115,12 +119,6 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
       subtitle={`Viewing test results for ${patient.name} (${patient.patientId})`}
       footer={
         <div className="modal-footer-actions" style={{ flexWrap: 'wrap' }}>
-          <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Icons.DollarSign size={16} className="text-teal" />
-            <span className="font-bold text-sm text-teal">
-              Selected Total: {totalPrice.toFixed(2)} EGP
-            </span>
-          </div>
           <Button type="button" variant="outline" onClick={onClose} disabled={deleting}>
             Close
           </Button>
@@ -182,7 +180,6 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
                 <th>Test Name</th>
                 <th>Result</th>
                 <th>Notes</th>
-                <th style={{ textAlign: 'right' }}>Price (EGP)</th>
                 <th style={{ width: '80px' }}>Date</th>
                 <th>Actions</th>
               </tr>
@@ -201,7 +198,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
                   <td data-label="Result">
                     <table className="medical-table">
                       <thead><tr><th>Child Analytic</th><th>Value</th><th>Unit</th><th>Reference Range</th></tr></thead>
-                      <tbody>{resultMigration(r).children.map(child => (
+                      <tbody>{resultMigration(r).children.filter(hasAnalyticResultValue).map(child => (
                         <tr key={child.id}><td data-label="Child Analytic"><small>{child.section}</small><div>{child.name}</div></td><td data-label="Value" style={{ whiteSpace: 'pre-wrap' }}>{child.resultType === 'differential' ? 'Relative: ' : ''}{flaggedResult(child.result, child.referenceRange, patient.gender)}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {flaggedResult(child.absoluteResult, child.absoluteReferenceRange, patient.gender)}</div>}</td><td data-label="Unit">{child.unit || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteUnit || 'Not specified'}</div>}</td><td data-label="Reference Range" style={{ whiteSpace: 'pre-wrap' }}>{child.referenceRange || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteReferenceRange || 'Not specified'}</div>}</td></tr>
                       ))}</tbody>
                     </table>
@@ -209,9 +206,6 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
                   <td data-label="Notes">
                     {r.generalComment && <p style={{ whiteSpace: 'pre-wrap' }}><strong>General Comment:</strong> {r.generalComment}</p>}
                     <span className="text-xs text-muted">{r.notes || '—'}</span>
-                  </td>
-                  <td data-label="Price" style={{ textAlign: 'right' }}>
-                    <span className="font-mono font-bold text-sm">{(resultPriceCents(r.price) / 100).toFixed(2)}</span>
                   </td>
                   <td data-label="Date">
                     <span className="text-xs text-muted">

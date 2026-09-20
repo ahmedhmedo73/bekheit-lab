@@ -2,7 +2,6 @@ import type {
   Patient,
   PatientFormData,
   PatientFilterOptions,
-  PatientStatus,
 } from "../types/patient";
 import { FirestoreService } from "./firestoreService";
 import { StorageService } from "./storage";
@@ -94,13 +93,6 @@ export const PatientService = {
     return updatedPatient;
   },
 
-  async updatePatientStatus(
-    id: string,
-    status: PatientStatus,
-  ): Promise<Patient> {
-    return this.updatePatient(id, { status });
-  },
-
   async deletePatient(id: string): Promise<boolean> {
     console.log(id);
 
@@ -132,7 +124,7 @@ export const PatientService = {
 
     let list = StorageService.getPatientData();
 
-    // 1. Search Query (name, patientId, phone, subtitle)
+    // 1. Search Query (name, patientId, phone, job title)
     if (options.search.trim()) {
       const q = options.search.toLowerCase().trim();
       list = list.filter(
@@ -140,8 +132,7 @@ export const PatientService = {
           p.name.toLowerCase().includes(q) ||
           p.patientId.toLowerCase().includes(q) ||
           p.phone.toLowerCase().includes(q) ||
-          p.jobTitle.toLowerCase().includes(q) ||
-          p.subtitle.toLowerCase().includes(q),
+          p.jobTitle.toLowerCase().includes(q),
       );
     }
 
