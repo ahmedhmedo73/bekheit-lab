@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import type { Patient } from '../../types/patient';
-import type { AnalyticType, AnalyticResultFormData, ChildAnalyticResult } from '../../types/analyticType';
-import { analyticChildren } from '../../services/analyticSchema';
+import type { AnalyticType, AnalyticResultFormData } from '../../types/analyticType';
 import { AnalyticResultService } from '../../services/analyticResultService';
+import { prefillAnalyticResults, type AnalyticResultEntry } from '../../services/analyticResultPrefill';
 import { useToast } from '../../context/ToastContext';
 import { Modal } from '../common/Modal';
 import { AnalyticValueInput } from './AnalyticValueInput';
-import { emptyAnalyticResult, hasAnalyticResultValue } from '../../services/analyticValues';
+import { hasAnalyticResultValue } from '../../services/analyticValues';
 import { Button } from '../common/Button';
 import { Icons } from '../common/Icons';
 import './AddAnalyticResultModal.css';
@@ -20,16 +20,6 @@ interface AddAnalyticResultModalProps {
   onSuccess?: () => void;
 }
 
-interface ResultEntry {
-  analyticTypeId: string;
-  analyticTypeName: string;
-  price: number;
-  result: string;
-  children: ChildAnalyticResult[];
-  notes: string;
-  generalComment: string;
-}
-
 export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
   isOpen,
   onClose,
@@ -39,14 +29,26 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
   onSuccess,
 }) => {
   const { success, error: toastError } = useToast();
-  const [entries, setEntries] = useState<ResultEntry[]>([]);
+  const [entries, setEntries] = useState<AnalyticResultEntry[]>([]);
   const [saving, setSaving] = useState(false);
+  const [loadingResults, setLoadingResults] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
-    if (isOpen) {
-      setEntries((assignedAnalytics ?? []).map(type => ({ analyticTypeId: type.id, analyticTypeName: type.name, price: type.price, result: '', children: analyticChildren(type).map(emptyAnalyticResult), notes: '', generalComment: type.generalComment ?? '' })));
-    }
-  }, [isOpen, assignedAnalytics]);
+    if (!isOpen || !patient) return;
+    let active = true;
+    const types = assignedAnalytics ?? [];
+    setEntries([]);
+    setLoadError('');
+    setLoadingResults(false);
+    if (!types.length) return;
+    setLoadingResults(true);
+    AnalyticResultService.getByPatientId(patient.id)
+      .then(results => { if (active) setEntries(prefillAnalyticResults(types, results, visitId)); })
+      .catch(() => { if (active) setLoadError('Could not load saved results. Close and reopen this dialog to retry.'); })
+      .finally(() => { if (active) setLoadingResults(false); });
+    return () => { active = false; };
+  }, [isOpen, patient?.id, visitId, assignedAnalytics]);
 
   const updateEntry = (idx: number, field: 'result' | 'notes' | 'generalComment', value: string) => {
     setEntries((prev) =>
@@ -55,7 +57,7 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (saving) return;
+    if (saving || loadingResults || loadError) return;
     if (!patient) return;
     if (entries.length === 0) {
       toastError('No Tests Assigned', 'Assign analytic types before recording results.');
@@ -125,7 +127,7 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
             variant="medical"
             onClick={handleSubmit}
             isLoading={saving}
-            disabled={saving || entries.length === 0}
+            disabled={saving || loadingResults || !!loadError || entries.length === 0}
             leftIcon={<Icons.Check size={16} />}
           >
             Save Results ({entries.length})
@@ -134,7 +136,11 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
       }
     >
       <div className="user-form-grid result-modal-content">
-        {entries.length === 0 && (
+        {loadingResults ? (
+          <p role="status" className="text-sm text-muted">Loading saved results…</p>
+        ) : loadError ? (
+          <p role="alert" className="text-sm text-danger">{loadError}</p>
+        ) : entries.length === 0 && (
           <div className="result-empty-state">
             <Icons.ClipboardList size={26} />
             <strong>No analytic types assigned</strong>
