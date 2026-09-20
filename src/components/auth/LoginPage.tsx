@@ -181,6 +181,7 @@ export const LoginPage: React.FC = () => {
               Sign In
             </Button>
           </form>
+          <p className="login-developer-credit">Developed by Eng Ahmed Kamel</p>
         </div>
       </div>
     </div>

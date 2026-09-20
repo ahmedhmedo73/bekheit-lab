@@ -700,6 +700,13 @@ a:hover {
   cursor: pointer;
 }
 
+.login-developer-credit {
+  margin: 2rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
 .demo-accounts-section {
   margin-top: 1.75rem;
 }
