@@ -67,24 +67,24 @@ export function buildAnalyticReport(patient: Patient, results: AnalyticResult[],
   .patient-info th, .patient-info td { border: 0.3pt solid #aaa; padding: 1mm 1.5mm; text-align: left; overflow-wrap: anywhere; }
   .patient-info th { width: 17%; }
   .patient-info td { width: 33%; font-weight: bold; }
-  .panel-title { margin: 0; padding: 3mm 0 4mm; border-top: 0.7pt solid #000; font-size: 14pt; text-align: center; text-decoration: underline; }
-  .results th { text-align: left; font-size: 11pt; padding: 0 1.5mm 5mm; }
-  .results td { padding: 1.2mm 1.5mm; vertical-align: top; font-family: Arial, sans-serif; font-size: 9pt; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .panel-title { margin: 0; padding: 3mm 0 4mm; border-top: 0.7pt solid #000; font-size: 17pt; font-weight: 700; text-align: center; text-decoration: underline; }
+  .results th { text-align: left; font-size: 12pt; font-weight: 700; padding: 0 1.5mm 5mm; }
+  .results td { padding: 1.1mm 1.5mm; vertical-align: top; font-family: Arial, sans-serif; font-size: 10pt; font-weight: 700; overflow-wrap: anywhere; white-space: pre-wrap; }
   .results .group td { font-weight: bold; text-decoration: underline; padding-bottom: 2mm; }
   .results .test-name, .results .value { font-weight: bold; }
   .results .separator { text-align: center; }
-  .results .range { font-size: 8pt; line-height: 1.35; }
+  .results .range { font-size: 10pt; line-height: 1.3; }
   .results { margin-bottom: 4mm; }
   .results th { padding-bottom: 2mm; }
-  .results .section-heading th { padding-top: 2mm; text-decoration: underline; font-size: 10pt; }
+  .results .section-heading th { padding-top: 2mm; text-decoration: underline; font-size: 11pt; }
   .differential { border-top: 0.7pt solid #000; }
   .differential th:not(:first-child) { text-align: center; }
   thead { display: table-header-group; }
   tr { break-inside: avoid; }
   .notes { font-size: 9pt; white-space: pre-wrap; margin: 5mm 1.5mm; overflow-wrap: anywhere; }
-  .previous-title { margin: 5mm 0 2mm; text-align: center; text-decoration: underline; font-size: 11pt; }
-  .previous-results th { text-align: left; padding: 1mm 1.5mm; border-bottom: 0.4pt solid #555; font-size: 9pt; }
-  .previous-results td { padding: 1mm 1.5mm; font-size: 9pt; vertical-align: top; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .previous-title { margin: 5mm 0 2mm; text-align: center; text-decoration: underline; font-size: 16pt; font-weight: 700; }
+  .previous-results th { text-align: left; padding: 1mm 1.5mm; border-bottom: 0.4pt solid #555; font-size: 12pt; font-weight: 700; }
+  .previous-results td { padding: 1mm 1.5mm; font-family: Arial, sans-serif; font-size: 10pt; font-weight: 700; vertical-align: top; overflow-wrap: anywhere; white-space: pre-wrap; }
   .previous-results { margin-bottom: 3mm; }
   .rule { border: 0; border-top: 0.7pt solid #000; margin: 6mm 0 0; }
   .signatures { margin-top: auto; padding: 20mm 12mm 5mm; display: flex; justify-content: space-between; font-size: 11pt; font-weight: bold; font-style: italic; break-inside: avoid; }
