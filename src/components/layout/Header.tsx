@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { Icons } from '../common/Icons';
 import { RoleBadge } from '../common/Badge';
@@ -43,9 +43,8 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeView }) =
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    success('Session Terminated', 'You have been securely signed out of the laboratory portal.');
+  const handleLogout = async () => {
+    if (await logout()) success('Session Terminated', 'You have been securely signed out of the laboratory portal.');
   };
 
   const getBreadcrumbTitle = () => {

@@ -3,7 +3,7 @@ import type { MedicalStaff, StaffFormData, Department, UserStatus, StaffFilterOp
 import type { UserRole } from '../../types/auth';
 import { UserService } from '../../services/userService';
 import { StorageService } from '../../services/storage';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { Icons } from '../common/Icons';
 import { Button } from '../common/Button';
@@ -117,13 +117,13 @@ export const UsersPage: React.FC = () => {
         success('Staff Record Updated', `Successfully updated profile for ${formData.name}.`);
       } else {
         const created = await UserService.createUser(formData, creatorName);
-        success('Staff Member Enrolled', `${created.name} registered with ID ${created.staffId}.`);
+        success('Staff Member Enrolled', `${created.name} registered with ID ${created.staffId}. Create a matching Email/Password user in Firebase Authentication to enable sign-in.`);
       }
       setIsFormModalOpen(false);
       setSelectedStaffForEdit(null);
       refreshList();
-    } catch (err: any) {
-      toastError('Operation Failed', err.message || 'Could not save staff data.');
+    } catch (err: unknown) {
+      toastError('Operation Failed', err instanceof Error ? err.message : 'Could not save staff data.');
     }
   };
 
@@ -136,8 +136,8 @@ export const UsersPage: React.FC = () => {
       success('Staff Member Removed', `${name} has been de-registered from the LIMS.`);
       setSelectedStaffForDelete(null);
       refreshList();
-    } catch (err: any) {
-      toastError('Deletion Failed', err.message || 'Could not delete staff member.');
+    } catch (err: unknown) {
+      toastError('Deletion Failed', err instanceof Error ? err.message : 'Could not delete staff member.');
     }
   };
 
@@ -150,8 +150,8 @@ export const UsersPage: React.FC = () => {
         `${updated.name} status is now marked as ${updated.status}.`
       );
       refreshList();
-    } catch (err: any) {
-      toastError('Toggle Failed', err.message);
+    } catch (err: unknown) {
+      toastError('Toggle Failed', err instanceof Error ? err.message : 'Could not update staff status.');
     }
   };
 

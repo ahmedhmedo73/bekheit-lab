@@ -1,30 +1,33 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { Icons } from '../common/Icons';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 
 export const LoginPage: React.FC = () => {
-  const { login, isLoading, error: authError } = useAuth();
-  const { success, error: toastError } = useToast();
+  const { login, resetPassword, isLoading, error: authError } = useAuth();
+  const { success } = useToast();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
+  const [resettingPassword, setResettingPassword] = useState(false);
+
+  const validEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
   const validate = () => {
     const errs: { email?: string; password?: string } = {};
     if (!email.trim()) {
-      errs.email = 'Staff Medical Email or ID is required.';
+      errs.email = 'Email address is required.';
+    } else if (!validEmail(email)) {
+      errs.email = 'Enter a valid email address.';
     }
 
     if (!password) {
       errs.password = 'Password is required.';
-    } else if (password.length < 4) {
-      errs.password = 'Password must be at least 4 characters.';
     }
 
     setFormErrors(errs);
@@ -36,10 +39,22 @@ export const LoginPage: React.FC = () => {
     if (!validate()) return;
 
     const ok = await login({ email, password, rememberMe });
-    if (ok) {
-      success('Authentication Successful', 'Welcome to Bakhet Medical Laboratories LIMS portal.');
-    } else {
-      toastError('Login Failed', 'Please verify your credentials or contact IT administration.');
+    if (ok) success('Authentication Successful', 'Welcome to Bakhet Medical Laboratories LIMS portal.');
+  };
+
+  const handlePasswordReset = async () => {
+    if (!validEmail(email)) {
+      setFormErrors(previous => ({ ...previous, email: 'Enter your email address to reset your password.' }));
+      return;
+    }
+    setFormErrors(previous => ({ ...previous, email: undefined }));
+    setResettingPassword(true);
+    try {
+      if (await resetPassword(email)) {
+        success('Reset Requested', 'If this email has an account, a password reset link has been sent.');
+      }
+    } finally {
+      setResettingPassword(false);
     }
   };
 
@@ -85,7 +100,7 @@ export const LoginPage: React.FC = () => {
               <span>Bakhet MEDICAL LAB</span>
             </div>
             <h2 className="login-title">Staff Portal Sign In</h2>
-            <p className="login-desc">Enter your laboratory credentials to access your diagnostic workbench.</p>
+            <p className="login-desc">Sign in with your registered staff email and Firebase password.</p>
           </div>
 
           {authError && (
@@ -97,11 +112,13 @@ export const LoginPage: React.FC = () => {
 
           <form onSubmit={handleFormSubmit} className="login-form" noValidate>
             <Input
-              label="username"
+              label="Email address"
               id="staff-username"
-              placeholder="e.g. mohamed.bakhet"
+              type="email"
+              autoComplete="username"
+              placeholder="name@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setFormErrors(previous => ({ ...previous, email: undefined })); }}
               error={formErrors.email}
               leftIcon={<Icons.User size={18} />}
               required
@@ -112,9 +129,10 @@ export const LoginPage: React.FC = () => {
                 label="Password"
                 id="staff-password"
                 type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
                 placeholder="Enter your password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setFormErrors(previous => ({ ...previous, password: undefined })); }}
                 error={formErrors.password}
                 leftIcon={<Icons.Lock size={18} />}
                 rightIcon={
@@ -142,16 +160,14 @@ export const LoginPage: React.FC = () => {
                 <span>Remember Me</span>
               </label>
 
-              <a
-                href="#forgot"
+              <button
+                type="button"
                 className="forgot-link"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert('For password resets, contact the Lab Operations Administrator (Ext. 104) or IT Security.');
-                }}
+                onClick={() => void handlePasswordReset()}
+                disabled={isLoading || resettingPassword}
               >
-                Forgot Password?
-              </a>
+                {resettingPassword ? 'Sending reset link…' : 'Forgot Password?'}
+              </button>
             </div>
 
             <Button
@@ -160,6 +176,7 @@ export const LoginPage: React.FC = () => {
               size="lg"
               fullWidth
               isLoading={isLoading}
+              disabled={isLoading || resettingPassword}
             >
               Sign In
             </Button>

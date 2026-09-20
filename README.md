@@ -1,4 +1,8 @@
-# React + TypeScript + Vite
+# Bakhet Medical Laboratory
+
+For staff account setup and Firebase Email/Password sign-in, see [Firebase staff sign-in setup](docs/firebase-auth-setup.md).
+
+## Development template notes
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

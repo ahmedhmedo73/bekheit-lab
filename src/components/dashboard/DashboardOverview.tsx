@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { UserService } from '../../services/userService';
 import { Card } from '../common/Card';
 import { Button } from '../common/Button';

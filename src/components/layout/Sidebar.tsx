@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { Icons } from '../common/Icons';
 
 export type NavView = 'patients' | 'results' | 'analytics' | 'samples' | 'tests' | 'qc' | 'settings' | 'users';
@@ -108,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             className="sidebar-logout-btn"
-            onClick={logout}
+            onClick={() => { void logout(); }}
             title="Sign out of LIMS console"
           >
             <Icons.LogOut size={18} />

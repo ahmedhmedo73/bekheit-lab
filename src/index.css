@@ -692,8 +692,12 @@ a:hover {
 }
 
 .forgot-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
   color: var(--brand-primary);
   font-weight: 500;
+  cursor: pointer;
 }
 
 .demo-accounts-section {
