@@ -93,7 +93,7 @@ export function buildAnalyticReport(patient: Patient, results: AnalyticResult[],
 </style></head><body>
 ${panels.map(result => {
   const children = (result.children ?? [{ id: 'legacy', name: result.analyticTypeName, result: result.result, unit: '', referenceRange: '' }]).filter(hasAnalyticResultValue);
-  const previous = history.filter(item => item.id !== result.id && item.analyticTypeId === result.analyticTypeId && (!patient.id || item.patientId === patient.id) && (!item.createdAt || !result.createdAt || item.createdAt < result.createdAt) && (item.children?.length ? item.children.some(hasAnalyticResultValue) : Boolean(item.result?.trim()))).sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+  const previous = history.filter(item => item.id !== result.id && item.analyticTypeId === result.analyticTypeId && (!result.visitId || !item.visitId || item.visitId !== result.visitId) && (!patient.id || item.patientId === patient.id) && (!item.createdAt || !result.createdAt || item.createdAt < result.createdAt) && (item.children?.length ? item.children.some(hasAnalyticResultValue) : Boolean(item.result?.trim()))).sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
   return `<section class="report-page">
     ${options.watermark ? `<img class="watermark" src="${logoUrl}" alt="" aria-hidden="true">` : ''}
     <header class="report-header">${options.watermark ? `<img class="report-logo" src="${logoUrl}" alt="Bakhet Medical Laboratory logo"> <p class="lab-name">BAKHET MEDICAL LABORATORY</p>` : `` }</header>

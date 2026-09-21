@@ -7,6 +7,7 @@ import { useToast } from '../../context/ToastContext';
 import { Modal } from '../common/Modal';
 import { AnalyticValueInput } from './AnalyticValueInput';
 import { hasAnalyticResultValue } from '../../services/analyticValues';
+import { calculateAutomaticAnalyticValues, isAutomaticAnalyticCalculatedField, isAutomaticAnalyticSourceField } from '../../services/automaticAnalyticCalculations';
 import { Button } from '../common/Button';
 import { Icons } from '../common/Icons';
 import './AddAnalyticResultModal.css';
@@ -33,18 +34,31 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
   const [saving, setSaving] = useState(false);
   const [loadingResults, setLoadingResults] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [expandedEntryIds, setExpandedEntryIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isOpen || !patient) return;
     let active = true;
     const types = assignedAnalytics ?? [];
     setEntries([]);
+    setExpandedEntryIds(new Set());
     setLoadError('');
     setLoadingResults(false);
     if (!types.length) return;
     setLoadingResults(true);
     AnalyticResultService.getByPatientId(patient.id)
-      .then(results => { if (active) setEntries(prefillAnalyticResults(types, results, visitId)); })
+      .then(results => {
+        if (active) {
+          const nextEntries = prefillAnalyticResults(types, results, visitId).map(entry => ({
+            ...entry,
+            children: calculateAutomaticAnalyticValues(entry.children),
+          }));
+          const firstIncomplete = nextEntries.find(entry => entry.children.some(child => !hasAnalyticResultValue(child)));
+          const initiallyExpanded = firstIncomplete ?? nextEntries[0];
+          setEntries(nextEntries);
+          setExpandedEntryIds(new Set(initiallyExpanded ? [initiallyExpanded.analyticTypeId] : []));
+        }
+      })
       .catch(() => { if (active) setLoadError('Could not load saved results. Close and reopen this dialog to retry.'); })
       .finally(() => { if (active) setLoadingResults(false); });
     return () => { active = false; };
@@ -81,7 +95,7 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
         };
         return data;
       });
-      await AnalyticResultService.createMany(results);
+      await AnalyticResultService.saveMany(results);
       success(
         'Results Saved',
         `${entries.length} analytic result(s) recorded for ${patient.name}.`
@@ -156,26 +170,44 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
             </div>
 
             <div className="result-entry-list">
-              {entries.map((entry, idx) => (
+              {entries.map((entry, idx) => {
+                const expanded = expandedEntryIds.has(entry.analyticTypeId);
+                const bodyId = `result-entry-body-${idx}`;
+                return (
                 <div
                   key={entry.analyticTypeId}
-                  className="result-entry-card"
+                  className={`result-entry-card ${expanded ? 'is-expanded' : ''}`}
                 >
-                  <div
+                  <button
+                    type="button"
                     className="result-entry-header"
+                    aria-expanded={expanded}
+                    aria-controls={bodyId}
+                    onClick={() => setExpandedEntryIds(previous => {
+                      const next = new Set(previous);
+                      if (next.has(entry.analyticTypeId)) next.delete(entry.analyticTypeId);
+                      else next.add(entry.analyticTypeId);
+                      return next;
+                    })}
                   >
                     <div>
                       <span className="font-semibold text-sm text-main">{entry.analyticTypeName}</span>
                       <span className="result-entry-progress">{entry.children.filter(hasAnalyticResultValue).length} of {entry.children.length} entered</span>
                     </div>
-                  </div>
-                  <div className="result-entry-body">
+                    <Icons.ChevronDown className="result-entry-chevron" size={20} aria-hidden="true" />
+                  </button>
+                  {expanded && <div className="result-entry-body" id={bodyId}>
                     <div className="result-entry-fields">
                       {entry.children.map((child, childIndex) => (
                         <div key={child.id}>
                           {child.section && (childIndex === 0 || entry.children[childIndex - 1].section !== child.section) && <h4 className="result-subsection">{child.section}</h4>}
                           <AnalyticValueInput child={child} prefix={`result-${entry.analyticTypeId}`} disabled={saving}
-                            onChange={updates => setEntries(prev => prev.map((item, i) => i === idx ? { ...item, children: item.children.map(test => test.id === child.id ? { ...test, ...updates } : test) } : item))} />
+                            autoCalculated={isAutomaticAnalyticCalculatedField(entry.children, child.id)}
+                            onChange={updates => setEntries(prev => prev.map((item, i) => {
+                              if (i !== idx) return item;
+                              const children = item.children.map(test => test.id === child.id ? { ...test, ...updates } : test);
+                              return { ...item, children: isAutomaticAnalyticSourceField(child.id) ? calculateAutomaticAnalyticValues(children, true) : children };
+                            }))} />
                         </div>
                       ))}
                     </div>
@@ -185,9 +217,10 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
                         placeholder="Optional report comment" value={entry.generalComment}
                         onChange={event => updateEntry(idx, 'generalComment', event.target.value)} />
                     </div>
-                  </div>
+                  </div>}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}

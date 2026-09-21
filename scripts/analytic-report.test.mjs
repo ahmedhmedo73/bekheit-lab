@@ -81,3 +81,12 @@ test('print omits blank children from current and previous results', () => {
   for (const value of ['Measured Urea', 'Absolute Only', '5710', 'Old Urea']) assert.ok(html.includes(value));
   for (const value of ['Unmeasured Creatinine', 'Old Empty Test']) assert.ok(!html.includes(value));
 });
+
+test('older duplicate results from the same visit are not printed as previous results', () => {
+  const selected = { ...current, patientId: 'p', visitId: 'visit-1' };
+  const duplicate = { ...old, patientId: 'p', visitId: 'visit-1', result: 'same visit duplicate' };
+  const priorVisit = { ...old, id: 'prior', patientId: 'p', visitId: 'visit-0', result: 'previous visit result' };
+  const html = buildAnalyticReport({ ...patient, id: 'p' }, [selected], { history: [duplicate, priorVisit, selected] });
+  assert.ok(!html.includes('same visit duplicate'));
+  assert.ok(html.includes('previous visit result'));
+});

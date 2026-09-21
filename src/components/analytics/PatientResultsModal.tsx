@@ -12,6 +12,7 @@ import { resultMigration } from '../../services/analyticSchema';
 import { hasAnalyticResultValue } from '../../services/analyticValues';
 import { togglePrintResult } from '../../services/printSelection';
 import { useToast } from '../../context/ToastContext';
+import './PatientResultsModal.css';
 
 
 interface PatientResultsModalProps {
@@ -51,7 +52,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
         .then(data => {
           if (!active) return;
           setHistory(data);
-          if (visitId) data = data.filter(result => result.visitId === visitId);
+          if (visitId) data = latestPanelResults(data.filter(result => result.visitId === visitId));
           setResults(data);
           setSelectedIds(latestPanelResults(data).map(result => result.id));
         })
@@ -118,7 +119,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
       }
       subtitle={`Viewing test results for ${patient.name} (${patient.patientId})`}
       footer={
-        <div className="modal-footer-actions" style={{ flexWrap: 'wrap' }}>
+        <div className="modal-footer-actions patient-results-footer">
           <Button type="button" variant="outline" onClick={onClose} disabled={deleting}>
             Close
           </Button>
@@ -162,8 +163,8 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
         </div>
       ) : (
         <>
-        <p className="text-sm text-muted">Select the analytics to print. One result per analytic can be selected; the latest is selected by default. Uncheck a result to remove it from this printout.</p>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <p className="text-sm text-muted patient-results-help">Select the analytics to print. One result per analytic can be selected; the latest is selected by default. Uncheck a result to remove it from this printout.</p>
+        <div className="patient-results-selection-actions">
           <Button type="button" variant="outline" size="sm" disabled={deleting} onClick={() => setSelectedIds(latestPanelResults(results).map(result => result.id))}>Select Latest</Button>
           <Button type="button" variant="outline" size="sm" disabled={deleting} onClick={() => setSelectedIds([])}>Clear Selection</Button>
         </div>
@@ -176,8 +177,7 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
           <table className="medical-table collapsible-table">
             <thead>
               <tr>
-                <th style={{ width: '60px' }}>Print</th>
-                <th>Test Name</th>
+                <th>Print / Test Name</th>
                 <th>Result</th>
                 <th>Notes</th>
                 <th style={{ width: '80px' }}>Date</th>
@@ -186,14 +186,19 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
             </thead>
             <tbody>
               {results.map((r) => (
-                <CollapsibleRow key={r.id} className="table-row-hover" summary={r.analyticTypeName} primaryCell={1}>
-                  <td>
+                <CollapsibleRow key={r.id} className="table-row-hover patient-result-row" summary={
+                  <div className="patient-result-summary">
                     <input type="checkbox" aria-label={`Print ${r.analyticTypeName} ${r.createdAt || r.id}`} checked={selectedIds.includes(r.id)} disabled={deleting}
                       onChange={() => setSelectedIds(previous => togglePrintResult(results, previous, r))} />
-                  </td>
+                    <span>{r.analyticTypeName}</span>
+                  </div>
+                }>
                   <td>
-                    <span className="font-semibold text-sm text-main">{r.analyticTypeName}</span>
-                    <div className="text-xs text-muted">{latestIds.has(r.id) ? 'Latest result' : 'Older result'}</div>
+                    <div className="patient-result-summary">
+                      <input type="checkbox" aria-label={`Print ${r.analyticTypeName} ${r.createdAt || r.id}`} checked={selectedIds.includes(r.id)} disabled={deleting}
+                        onChange={() => setSelectedIds(previous => togglePrintResult(results, previous, r))} />
+                      <div><span className="font-semibold text-sm text-main">{r.analyticTypeName}</span><div className="text-xs text-muted">{latestIds.has(r.id) ? 'Latest result' : 'Older result'}</div></div>
+                    </div>
                   </td>
                   <td data-label="Result">
                     <table className="medical-table">

@@ -5,6 +5,9 @@ export const AnalyticResultService = {
   async createMany(data: AnalyticResultFormData[]): Promise<void> {
     return FirestoreService.createAnalyticResults(data);
   },
+  async saveMany(data: AnalyticResultFormData[]): Promise<void> {
+    return FirestoreService.saveAnalyticResults(data);
+  },
   async getByPatientId(patientId: string): Promise<AnalyticResult[]> {
     return await FirestoreService.getResultsByPatientId(patientId);
   },

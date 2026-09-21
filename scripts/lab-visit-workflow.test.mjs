@@ -105,6 +105,18 @@ test('ordered panels are not charged again when saving, repeating or deleting re
   await service.deleteAnalyticResult(resultKey.split('/')[1]);
   assert.equal(records.get('labVisits/v').totalAmount, 10);
 });
+test('editing results updates the existing visit panel instead of creating a duplicate', async () => {
+  const { service, records } = setup();
+  records.get('labVisits/v').assignedAnalytics = [{ id: 'kidney', name: 'Kidney', price: 10 }];
+  await service.saveAnalyticResults([{ ...panel, children: [{ id: 'urea', result: '40' }] }]);
+  const firstKey = [...records.keys()].find(key => key.startsWith('analyticResults/'));
+  await service.saveAnalyticResults([{ ...panel, children: [{ id: 'urea', result: '46.4' }] }]);
+  const resultKeys = [...records.keys()].filter(key => key.startsWith('analyticResults/'));
+  assert.deepEqual(resultKeys, [firstKey]);
+  assert.equal(records.get(firstKey).children[0].result, '46.4');
+  assert.ok(records.get(firstKey).createdAt);
+  assert.ok(records.get(firstKey).updatedAt);
+});
 test('visit workflow accepts three statuses and rejects removed statuses', async () => {
   const { service, records } = setup();
   for (const status of ['New', 'In Lab', 'Completed']) {

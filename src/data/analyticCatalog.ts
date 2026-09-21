@@ -4,7 +4,7 @@ import type { AnalyticType, ChildAnalytic } from '../types/analyticType';
 const t = (id: string, name: string, section: string, unit = '', referenceRange = '', resultType: ChildAnalytic['resultType'] = 'numeric', options: string[] = []): ChildAnalytic => ({ id, name, section, unit, referenceRange, resultType, options });
 const q = (id: string, name: string, section: string, range = 'Nil') => t(id, name, section, '', range, 'qualitative', ['Nil', 'Negative', 'Positive', 'Trace', '+', '++', '+++']);
 const d = (id: string, name: string, referenceRange: string, absoluteReferenceRange?: string): ChildAnalytic => ({ ...t(id, name, 'Differential White Cell Count', '%', referenceRange, 'differential'), absoluteEnabled: absoluteReferenceRange !== undefined, absoluteReferenceRange: absoluteReferenceRange ?? '', absoluteUnit: '' });
-const p = (id: string, name: string, sourcePage: number, children: ChildAnalytic[]): AnalyticType => ({ id, name, price: 0, sourcePage, children: children.map(child => ({ ...child, referenceSource: `analytics.pdf, page ${sourcePage}` })), generalComment: '', schemaVersion: 2 });
+const p = (id: string, name: string, sourcePage: number, children: ChildAnalytic[], referenceSource = `analytics.pdf, page ${sourcePage}`): AnalyticType => ({ id, name, price: 0, sourcePage, children: children.map(child => ({ ...child, referenceSource })), generalComment: '', schemaVersion: 2 });
 
 export const ANALYTIC_CATALOG = [
   p('pdf-clinical-chemistry', 'Clinical Chemistry Report', 1, [
@@ -67,4 +67,14 @@ export const ANALYTIC_CATALOG = [
     t('creatinine', 'Creatinine (Serum)', 'Kidney Functions', 'mg/dL', '0.5 - 1.1'),
     t('uric-acid', 'Uric Acid (Serum)', 'Kidney Functions', 'mg/dL', '2.4 - 5.7'),
   ]),
+  p('lipids-profile', 'Lipids Profile', 9, [
+    t('total-cholesterol', 'Total Cholesterol (Serum)', 'Lipids Profile', 'mg/dL', 'NORMAL: UP TO 200\nBORDERLINE: 200 - 240\nHIGH: >240'),
+    t('triglycerides', 'Triglycerides (Serum)', 'Lipids Profile', 'mg/dL', 'OPTIMAL: <100\nNORMAL: 101 - 150\nBORDERLINE: 150 - 199\nHIGH: 200 - 499\nVERY HIGH: >500'),
+    t('hdl-cholesterol', 'HDL Cholesterol (Serum)', 'Lipids Profile', 'mg/dL', 'MORE THAN 40'),
+    t('ldl-cholesterol', 'LDL Cholesterol (Serum)', 'Lipids Profile', 'mg/dL', 'Desirable: <100 mg/dL\nAbove Desirable: 100 - 129 mg/dL\nBorderline: 130 - 159 mg/dL\nHigh: 160 - 189 mg/dL\nVery High: >=190 mg/dL'),
+    t('vldl-cholesterol', 'VLDL Cholesterol', 'Lipids Profile', 'mg/dL', '0 - 32'),
+    t('non-hdl', 'NON HDL', 'Lipids Profile', 'mg/dL', 'OPTIMAL: <130\nBORDERLINE: 130 - 159\nHIGH: 160 - 189'),
+    t('risk-ratio-i', 'Risk ratio I', 'Lipids Profile', '', '0 - 5.5'),
+    t('risk-ratio-ii', 'Risk ratio II', 'Lipids Profile', '', '1/2 AVERAGE: <3.9\nAVERAGE: <5.0\n2 AVERAGE: <9.6\n3 AVERAGE: <23.4'),
+  ], 'User-provided Lipids Profile reference'),
 ];

@@ -1,0 +1,99 @@
+.patient-results-footer {
+  flex-wrap: wrap;
+}
+
+.patient-results-selection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.patient-result-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.patient-result-summary input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand-primary);
+}
+
+.patient-result-summary span {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .modal-overlay:has(.patient-results-footer) {
+    padding: 0.75rem;
+  }
+
+  .modal-container:has(.patient-results-footer) {
+    max-height: calc(100dvh - 1.5rem);
+    border-radius: var(--radius-lg);
+  }
+
+  .modal-container:has(.patient-results-footer) .modal-header,
+  .modal-container:has(.patient-results-footer) .modal-body,
+  .modal-container:has(.patient-results-footer) .modal-footer {
+    padding: 1rem;
+  }
+
+  .modal-container:has(.patient-results-footer) .modal-title-wrap {
+    min-width: 0;
+  }
+
+  .modal-container:has(.patient-results-footer) .modal-title {
+    font-size: 1.125rem;
+  }
+
+  .modal-container:has(.patient-results-footer) .modal-subtitle {
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .modal-container:has(.patient-results-footer) .modal-close-btn {
+    flex: none;
+  }
+
+  .patient-results-footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .patient-results-footer .btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .patient-results-footer .btn:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .patient-results-help {
+    line-height: 1.5;
+  }
+
+  .patient-results-selection-actions .btn {
+    flex: 1 1 9rem;
+  }
+
+  .patient-result-row .mobile-row-primary {
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 400px) {
+  .patient-results-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-results-footer .btn:last-child {
+    grid-column: auto;
+  }
+}

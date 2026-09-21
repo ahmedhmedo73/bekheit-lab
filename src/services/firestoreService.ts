@@ -460,6 +460,46 @@ const firestoreService = {
     });
   },
 
+  async saveAnalyticResults(entries: AnalyticResultFormData[]): Promise<void> {
+    if (!db) throw new Error('Firestore is not initialized');
+    if (!entries.length) return;
+    if (entries.length > 499) throw new Error('Save at most 499 panels at a time.');
+    const visitId = entries[0]?.visitId;
+    if (!visitId || entries.some(entry => entry.visitId !== visitId || entry.patientId !== entries[0].patientId)) throw new Error('Choose one lab visit for these results.');
+
+    const existingSnapshot = await getDocs(query(collection(db, ANALYTIC_RESULTS_COLLECTION), where('visitId', '==', visitId)));
+    const latestByType = new Map<string, QueryDocumentSnapshot<DocumentData>>();
+    for (const snapshot of existingSnapshot.docs) {
+      const typeId = snapshot.data().analyticTypeId as string | undefined;
+      if (!typeId) continue;
+      const previous = latestByType.get(typeId);
+      if (!previous || String(snapshot.data().createdAt ?? '') > String(previous.data().createdAt ?? '')) latestByType.set(typeId, snapshot);
+    }
+
+    const visitRef = doc(db, LAB_VISITS_COLLECTION, visitId);
+    const targets = entries.map(entry => latestByType.get(entry.analyticTypeId)?.ref ?? doc(collection(db!, ANALYTIC_RESULTS_COLLECTION)));
+    await runTransaction(db, async transaction => {
+      const visit = await transaction.get(visitRef);
+      const currentResults = await Promise.all(targets.map(target => transaction.get(target)));
+      if (!visit.exists() || visit.data().patientId !== entries[0].patientId) throw new Error('The selected visit does not belong to this patient.');
+      if (!['Open', 'New', 'In Lab', 'Pending Results'].includes(visit.data().status)) throw new Error('Change the visit to In Lab before adding results.');
+      const assigned = visit.data().assignedAnalytics as AnalyticType[] | undefined;
+      if (assigned?.length && entries.some(entry => !assigned.some(type => type.id === entry.analyticTypeId))) throw new Error('Results must belong to the analytic types assigned to this visit.');
+
+      const timestamp = new Date().toISOString();
+      entries.forEach((data, index) => {
+        const current = currentResults[index];
+        if (current.exists()) {
+          if (current.data().visitId !== visitId || current.data().analyticTypeId !== data.analyticTypeId) throw new Error('The saved result no longer matches this visit.');
+          transaction.update(targets[index], cleanFirestoreData({ ...data, schemaVersion: 2, updatedAt: timestamp }));
+        } else {
+          transaction.set(targets[index], cleanFirestoreData({ ...data, schemaVersion: 2, createdAt: timestamp, updatedAt: timestamp }));
+        }
+      });
+      transaction.update(visitRef, { updatedAt: timestamp });
+    });
+  },
+
   async createAnalyticResult(data: AnalyticResultFormData): Promise<AnalyticResult> {
     if (!db) throw new Error('Firestore is not initialized');
     try {

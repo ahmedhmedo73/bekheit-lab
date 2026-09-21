@@ -14,7 +14,7 @@ export function CollapsibleRow({ children, summary, primaryCell = 0, className =
         className: `${element.props.className ?? ''} mobile-row-primary`.trim(),
         children: <>
           <div className="mobile-row-original">{element.props.children}</div>
-          <span className="mobile-row-heading">{summary}</span>
+          <div className="mobile-row-heading">{summary}</div>
           <button type="button" className="mobile-row-toggle" aria-label={`${expanded ? 'Collapse' : 'Expand'} ${typeof summary === 'string' ? summary : 'row'} details`} aria-expanded={expanded} onClick={() => setExpanded(value => !value)}><Icons.ChevronDown size={18} /></button>
         </>,
       });
