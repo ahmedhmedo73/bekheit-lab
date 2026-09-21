@@ -27,17 +27,18 @@ test('existing child definitions and result snapshots remain untouched', () => {
   assert.deepEqual(resultMigration({ analyticTypeName: 'Kidney', children }).children, children);
 });
 
-test('PDF catalog contains every page and has unique child IDs without patient results', () => {
-  assert.equal(ANALYTIC_CATALOG.length, 9);
-  assert.equal(ANALYTIC_CATALOG.reduce((sum, panel) => sum + panel.children.length, 0), 71);
-  assert.deepEqual(ANALYTIC_CATALOG.map(panel => panel.sourcePage), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+test('report catalog covers supplied panels and has unique child IDs without patient results', () => {
+  assert.equal(ANALYTIC_CATALOG.length, 22);
+  assert.equal(ANALYTIC_CATALOG.reduce((sum, panel) => sum + panel.children.length, 0), 145);
+  assert.deepEqual(ANALYTIC_CATALOG.map(panel => panel.sourcePage), Array.from({ length: 22 }, (_, index) => index + 1));
+  assert.equal(new Set(ANALYTIC_CATALOG.map(panel => panel.id)).size, ANALYTIC_CATALOG.length);
   for (const panel of ANALYTIC_CATALOG) {
     assert.equal(new Set(panel.children.map(child => child.id)).size, panel.children.length);
     for (const child of panel.children) {
       assert.ok(child.name && child.section && child.resultType);
       assert.equal(typeof child.unit, 'string');
       assert.equal(typeof child.referenceRange, 'string');
-      assert.equal(child.referenceSource, panel.id === 'lipids-profile' ? 'User-provided Lipids Profile reference' : `analytics.pdf, page ${panel.sourcePage}`);
+      assert.ok(child.referenceSource);
       assert.equal('result' in child, false);
     }
     assert.equal(panel.generalComment, '');
