@@ -33,3 +33,9 @@
 .visit-total { display:flex; justify-content:space-between; gap:16px; align-items:center; margin-top:16px; padding:16px; border-radius:10px; background:var(--brand-secondary-light); color:var(--brand-secondary-hover); }
 .visit-total strong { font-size:20px; }
 @media(max-width:700px) { .visit-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .visit-total { flex-wrap:wrap; } }
+
+.visits-page .table-pagination-footer {
+  margin: 16px -16px -16px -16px;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}

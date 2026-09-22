@@ -17,8 +17,6 @@ export const AnalyticTypesPage: React.FC = () => {
   const [types, setTypes] = useState<AnalyticType[]>([]);
   const [filteredTypes, setFilteredTypes] = useState<AnalyticType[]>([]);
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const pageSize = 8;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingType, setEditingType] = useState<AnalyticType | null>(null);
@@ -50,11 +48,7 @@ export const AnalyticTypesPage: React.FC = () => {
       list = list.filter((t) => t.name.toLowerCase().includes(q) || analyticChildren(t).some(child => child.name.toLowerCase().includes(q)));
     }
     setFilteredTypes(list);
-    setPage(1);
   }, [types, search]);
-
-  const totalPages = Math.ceil(filteredTypes.length / pageSize) || 1;
-  const paginatedTypes = filteredTypes.slice((page - 1) * pageSize, page * pageSize);
 
   const stats = {
     total: types.length,
@@ -218,7 +212,7 @@ export const AnalyticTypesPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {paginatedTypes.length === 0 ? (
+              {filteredTypes.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="table-empty-cell">
                     <div className="empty-state-box">
@@ -258,11 +252,11 @@ export const AnalyticTypesPage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                paginatedTypes.map((type, idx) => (
+                filteredTypes.map((type, idx) => (
                   <CollapsibleRow key={type.id} className="table-row-hover" summary={type.name}>
                     <td>
                       <span className="font-mono text-xs text-muted">
-                        {(page - 1) * pageSize + idx + 1}
+                        {idx + 1}
                       </span>
                     </td>
                     <td data-label="Test Name">
@@ -333,46 +327,10 @@ export const AnalyticTypesPage: React.FC = () => {
           </table>
         </div>
 
-        {/* Pagination Footer */}
+        {/* Table Footer */}
         <div className="table-pagination-footer">
           <div className="pagination-info">
-            Showing{' '}
-            <span className="font-semibold text-teal">
-              {filteredTypes.length === 0 ? 0 : (page - 1) * pageSize + 1}
-            </span>{' '}
-            to{' '}
-            <span className="font-semibold text-teal">
-              {Math.min(page * pageSize, filteredTypes.length)}
-            </span>{' '}
-            of <span className="font-semibold text-teal">{filteredTypes.length}</span> analytic types
-          </div>
-
-          <div className="pagination-controls">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-              leftIcon={<Icons.ChevronLeft size={16} />}
-            >
-              Previous
-            </Button>
-
-            <span className="page-indicator">
-              Page {page} of {totalPages}
-            </span>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              rightIcon={<Icons.ChevronRight size={16} />}
-            >
-              Next
-            </Button>
+            Showing <span className="font-semibold text-teal">{filteredTypes.length}</span> analytic {filteredTypes.length === 1 ? 'type' : 'types'}
           </div>
         </div>
       </Card>

@@ -28,9 +28,9 @@ test('existing child definitions and result snapshots remain untouched', () => {
 });
 
 test('report catalog covers supplied panels and has unique child IDs without patient results', () => {
-  assert.equal(ANALYTIC_CATALOG.length, 22);
-  assert.equal(ANALYTIC_CATALOG.reduce((sum, panel) => sum + panel.children.length, 0), 145);
-  assert.deepEqual(ANALYTIC_CATALOG.map(panel => panel.sourcePage), Array.from({ length: 22 }, (_, index) => index + 1));
+  assert.equal(ANALYTIC_CATALOG.length, 24);
+  assert.equal(ANALYTIC_CATALOG.reduce((sum, panel) => sum + panel.children.length, 0), 152);
+  assert.deepEqual(ANALYTIC_CATALOG.map(panel => panel.sourcePage), Array.from({ length: 24 }, (_, index) => index + 1));
   assert.equal(new Set(ANALYTIC_CATALOG.map(panel => panel.id)).size, ANALYTIC_CATALOG.length);
   for (const panel of ANALYTIC_CATALOG) {
     assert.equal(new Set(panel.children.map(child => child.id)).size, panel.children.length);

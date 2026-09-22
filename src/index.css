@@ -1878,21 +1878,29 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   padding: 0.875rem 1.25rem;
   background-color: #f8fafc;
   border-top: 1px solid var(--border-subtle);
   font-size: 0.8125rem;
 }
 
+.pagination-info {
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
 .pagination-controls {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 .page-indicator {
   font-weight: 600;
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 .system-reset-row {
@@ -2771,6 +2779,48 @@ a:hover {
   }
 }
 
+@media (max-width: 640px) {
+  .table-pagination-footer {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.875rem 1rem;
+    text-align: center;
+  }
+
+  .pagination-info {
+    text-align: center;
+    width: 100%;
+    font-size: 0.8125rem;
+  }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto;
+    gap: 0.5rem;
+  }
+
+  .pagination-controls .btn {
+    flex: 1;
+    min-width: 0;
+    max-width: 120px;
+    padding: 0.45rem 0.5rem;
+    font-size: 0.75rem;
+    justify-content: center;
+  }
+
+  .page-indicator {
+    font-size: 0.75rem;
+    padding: 0 0.25rem;
+    flex-shrink: 0;
+    text-align: center;
+  }
+}
+
 @media (max-width: 480px) {
   .dashboard-header {
     padding: 0 0.75rem;
@@ -2799,5 +2849,36 @@ a:hover {
     width: 16px;
     height: 16px;
     font-size: 0.6rem;
+  }
+
+  /* Mobile Pagination Footer */
+  .table-pagination-footer {
+    padding: 0.75rem 0.75rem;
+    gap: 0.65rem;
+  }
+
+  .pagination-info {
+    font-size: 0.75rem;
+  }
+
+  .pagination-controls {
+    max-width: 100%;
+    gap: 0.35rem;
+  }
+
+  .pagination-controls .btn {
+    padding: 0.35rem 0.4rem;
+    font-size: 0.72rem;
+    gap: 0.25rem;
+  }
+
+  .pagination-controls .btn .btn-icon-left svg,
+  .pagination-controls .btn .btn-icon-right svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .page-indicator {
+    font-size: 0.7rem;
   }
 }

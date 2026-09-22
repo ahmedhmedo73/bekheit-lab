@@ -52,8 +52,6 @@ export const UsersPage: React.FC = () => {
     status: 'ALL',
     sortBy: 'staffId',
     sortOrder: 'asc',
-    page: 1,
-    pageSize: 8,
   });
 
   const [refreshKey, setRefreshKey] = useState<number>(0);
@@ -68,7 +66,6 @@ export const UsersPage: React.FC = () => {
 
   const [staffList, setStaffList] = useState<MedicalStaff[]>([]);
   const [total, setTotal] = useState<number>(0);
-  const [totalPages, setTotalPages] = useState<number>(1);
   const [stats, setStats] = useState({ totalStaff: 0, activeStaff: 0, onLeave: 0, admins: 0, inTraining: 0 });
   const [, setIsLoading] = useState<boolean>(false);
 
@@ -82,7 +79,6 @@ export const UsersPage: React.FC = () => {
         if (isMounted) {
           setStaffList(result.data);
           setTotal(result.total);
-          setTotalPages(result.totalPages);
         }
       } catch (err) {
         console.error('Error loading staff:', err);
@@ -288,7 +284,7 @@ export const UsersPage: React.FC = () => {
               placeholder="Search by staff name, ID, license, bench, email..."
               value={filterOptions.search}
               onChange={(e) =>
-                setFilterOptions((prev) => ({ ...prev, search: e.target.value, page: 1 }))
+                setFilterOptions((prev) => ({ ...prev, search: e.target.value }))
               }
               leftIcon={<Icons.Search size={16} />}
               rightIcon={
@@ -296,7 +292,7 @@ export const UsersPage: React.FC = () => {
                   <button
                     type="button"
                     className="clear-search-btn"
-                    onClick={() => setFilterOptions((prev) => ({ ...prev, search: '', page: 1 }))}
+                    onClick={() => setFilterOptions((prev) => ({ ...prev, search: '' }))}
                   >
                     <Icons.X size={14} />
                   </button>
@@ -313,7 +309,6 @@ export const UsersPage: React.FC = () => {
                 setFilterOptions((prev) => ({
                   ...prev,
                   department: e.target.value as Department | 'ALL',
-                  page: 1,
                 }))
               }
               options={DEPARTMENTS_FILTER}
@@ -329,7 +324,6 @@ export const UsersPage: React.FC = () => {
                 setFilterOptions((prev) => ({
                   ...prev,
                   role: e.target.value as UserRole | 'ALL',
-                  page: 1,
                 }))
               }
               options={ROLES_FILTER}
@@ -345,7 +339,6 @@ export const UsersPage: React.FC = () => {
                 setFilterOptions((prev) => ({
                   ...prev,
                   status: e.target.value as UserStatus | 'ALL',
-                  page: 1,
                 }))
               }
               options={STATUS_FILTER}
@@ -366,7 +359,7 @@ export const UsersPage: React.FC = () => {
                 Keyword: "{filterOptions.search}"
                 <button
                   type="button"
-                  onClick={() => setFilterOptions((prev) => ({ ...prev, search: '', page: 1 }))}
+                  onClick={() => setFilterOptions((prev) => ({ ...prev, search: '' }))}
                 >
                   <Icons.X size={12} />
                 </button>
@@ -377,7 +370,7 @@ export const UsersPage: React.FC = () => {
                 Dept: {filterOptions.department}
                 <button
                   type="button"
-                  onClick={() => setFilterOptions((prev) => ({ ...prev, department: 'ALL', page: 1 }))}
+                  onClick={() => setFilterOptions((prev) => ({ ...prev, department: 'ALL' }))}
                 >
                   <Icons.X size={12} />
                 </button>
@@ -388,7 +381,7 @@ export const UsersPage: React.FC = () => {
                 Role: {filterOptions.role}
                 <button
                   type="button"
-                  onClick={() => setFilterOptions((prev) => ({ ...prev, role: 'ALL', page: 1 }))}
+                  onClick={() => setFilterOptions((prev) => ({ ...prev, role: 'ALL' }))}
                 >
                   <Icons.X size={12} />
                 </button>
@@ -399,7 +392,7 @@ export const UsersPage: React.FC = () => {
                 Status: {filterOptions.status}
                 <button
                   type="button"
-                  onClick={() => setFilterOptions((prev) => ({ ...prev, status: 'ALL', page: 1 }))}
+                  onClick={() => setFilterOptions((prev) => ({ ...prev, status: 'ALL' }))}
                 >
                   <Icons.X size={12} />
                 </button>
@@ -416,8 +409,6 @@ export const UsersPage: React.FC = () => {
                   status: 'ALL',
                   sortBy: 'staffId',
                   sortOrder: 'asc',
-                  page: 1,
-                  pageSize: 8,
                 })
               }
             >
@@ -508,8 +499,6 @@ export const UsersPage: React.FC = () => {
                             status: 'ALL',
                             sortBy: 'staffId',
                             sortOrder: 'asc',
-                            page: 1,
-                            pageSize: 8,
                           })
                         }
                       >
@@ -632,46 +621,10 @@ export const UsersPage: React.FC = () => {
           </table>
         </div>
 
-        {/* Table Footer & Pagination */}
+        {/* Table Footer */}
         <div className="table-pagination-footer">
           <div className="pagination-info">
-            Showing{' '}
-            <span className="font-semibold text-teal">
-              {total === 0 ? 0 : (filterOptions.page - 1) * filterOptions.pageSize + 1}
-            </span>{' '}
-            to{' '}
-            <span className="font-semibold text-teal">
-              {Math.min(filterOptions.page * filterOptions.pageSize, total)}
-            </span>{' '}
-            of <span className="font-semibold text-teal">{total}</span> laboratory staff members
-          </div>
-
-          <div className="pagination-controls">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={filterOptions.page <= 1}
-              onClick={() => setFilterOptions((prev) => ({ ...prev, page: prev.page - 1 }))}
-              leftIcon={<Icons.ChevronLeft size={16} />}
-            >
-              Previous
-            </Button>
-
-            <span className="page-indicator">
-              Page {filterOptions.page} of {totalPages}
-            </span>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={filterOptions.page >= totalPages}
-              onClick={() => setFilterOptions((prev) => ({ ...prev, page: prev.page + 1 }))}
-              rightIcon={<Icons.ChevronRight size={16} />}
-            >
-              Next
-            </Button>
+            Showing <span className="font-semibold text-teal">{total}</span> laboratory staff {total === 1 ? 'member' : 'members'}
           </div>
         </div>
       </Card>

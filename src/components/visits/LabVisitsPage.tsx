@@ -124,7 +124,47 @@ export function LabVisitsPage() {
             </CollapsibleRow>;
           })}
         </tbody></table></div>
-        <div className="table-pagination-footer"><span>{filtered.length} visits · Page {currentPage} of {pages}</span><div className="flex gap-2"><Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Previous</Button><Button variant="outline" size="sm" disabled={currentPage === pages} onClick={() => setPage(currentPage + 1)}>Next</Button></div></div>
+        <div className="table-pagination-footer">
+          <div className="pagination-info">
+            Showing{' '}
+            <span className="font-semibold text-teal">
+              {filtered.length === 0 ? 0 : (currentPage - 1) * 10 + 1}
+            </span>{' '}
+            to{' '}
+            <span className="font-semibold text-teal">
+              {Math.min(currentPage * 10, filtered.length)}
+            </span>{' '}
+            of <span className="font-semibold text-teal">{filtered.length}</span> visits
+          </div>
+
+          <div className="pagination-controls">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              leftIcon={<Icons.ChevronLeft size={16} />}
+            >
+              Previous
+            </Button>
+
+            <span className="page-indicator">
+              Page {currentPage} of {pages}
+            </span>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= pages}
+              onClick={() => setPage((p) => Math.min(pages, p + 1))}
+              rightIcon={<Icons.ChevronRight size={16} />}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       </>}
     </Card>
     <Modal isOpen={!!form} onClose={() => { if (!busy) setForm(null); }} title={<span>{form === 'new' ? 'New Lab Visit' : `Edit ${form?.visitNumber ?? ''}`}</span>} footer={<div className="modal-footer-actions"><Button variant="outline" disabled={busy} onClick={() => setForm(null)}>Cancel</Button><Button variant="medical" disabled={busy} isLoading={busy} onClick={save}>Save Visit</Button></div>}>

@@ -713,9 +713,10 @@ const firestoreService = {
       });
 
       const total = list.length;
-      const totalPages = Math.ceil(total / options.pageSize) || 1;
-      const startIndex = (options.page - 1) * options.pageSize;
-      const paginated = list.slice(startIndex, startIndex + options.pageSize);
+      const totalPages = options.pageSize ? Math.ceil(total / options.pageSize) || 1 : 1;
+      const paginated = (options.page && options.pageSize)
+        ? list.slice((options.page - 1) * options.pageSize, (options.page - 1) * options.pageSize + options.pageSize)
+        : list;
 
       return {
         data: paginated,

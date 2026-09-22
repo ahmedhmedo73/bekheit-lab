@@ -4,7 +4,7 @@ import type { AnalyticType, ChildAnalytic } from '../types/analyticType';
 const t = (id: string, name: string, section: string, unit = '', referenceRange = '', resultType: ChildAnalytic['resultType'] = 'numeric', options: string[] = []): ChildAnalytic => ({ id, name, section, unit, referenceRange, resultType, options });
 const q = (id: string, name: string, section: string, range = 'Nil') => t(id, name, section, '', range, 'qualitative', ['Nil', 'Negative', 'Positive', 'Trace', '+', '++', '+++']);
 const d = (id: string, name: string, referenceRange: string, absoluteReferenceRange?: string): ChildAnalytic => ({ ...t(id, name, 'Differential White Cell Count', '%', referenceRange, 'differential'), absoluteEnabled: absoluteReferenceRange !== undefined, absoluteReferenceRange: absoluteReferenceRange ?? '', absoluteUnit: '' });
-const p = (id: string, name: string, sourcePage: number, children: ChildAnalytic[], referenceSource = `analytics.pdf, page ${sourcePage}`): AnalyticType => ({ id, name, price: 0, sourcePage, children: children.map(child => ({ ...child, referenceSource })), generalComment: '', schemaVersion: 2 });
+const p = (id: string, name: string, sourcePage: number, children: ChildAnalytic[], referenceSource = `analytics.pdf, page ${sourcePage}`): AnalyticType => ({ id, name, price: 0, sourcePage, children: children.map(child => ({ ...child, referenceSource: child.referenceSource ?? referenceSource })), generalComment: '', schemaVersion: 2 });
 
 export const ANALYTIC_CATALOG = [
   p('pdf-clinical-chemistry', 'Clinical Chemistry Report', 1, [
@@ -14,10 +14,13 @@ export const ANALYTIC_CATALOG = [
     t('ldh', 'LDH (Lactate Dehydrogenase)', 'Enzymes', 'U/L', '240 - 480'),
     t('amylase', 'Amylase', 'Pancreatic Enzymes', 'U/L', '28 - 100'),
     t('lipase', 'Lipase', 'Pancreatic Enzymes', 'U/L', '13 - 60'),
+    { ...t('amyloid-a', 'Amyloid "A" Protein', 'Test', 'mg/L', 'Up to 10', 'text'), referenceSource: 'User-provided Amyloid A report' },
   ]),
   p('pdf-hormones', 'Hormones Report', 2, [
     t('tsh', 'TSH', 'Thyroid Profile', 'uIU/mL', '0.35 - 5.1'),
     t('free-t4', 'Free T4', 'Thyroid Profile', 'ng/dL', '0.87 - 1.85'),
+    { ...t('anti-tg', 'Anti Thyroglobulin Ab (Anti-TG)', 'Thyroid Profile', 'IU/mL', 'Up to 4', 'text'), referenceSource: 'User-provided thyroid antibody report' },
+    { ...t('anti-tpo', 'Anti Microsomal / Peroxidase', 'Thyroid Profile', 'IU/mL', 'Less Than 9'), referenceSource: 'User-provided thyroid antibody report' },
     t('ferritin', 'Ferritin', 'Hormones Assay', 'ng/ml', '10 - 291'),
     t('prolactin', 'PRL (Prolactin)', 'Hormones Assay', 'ng/ml', '1.2 - 29.93'),
     t('serum-progesterone', 'Serum Progesterone', 'Hormones Assay', 'ng/ml', 'Follicular: 0.1 - 0.78\nOvulation: 0.1 - 5.52\nLuteal: 3.82 - 15.68\nPostmenopausal: 0.1 - 0.71'),
@@ -176,4 +179,12 @@ export const ANALYTIC_CATALOG = [
     t('homa2-beta', 'HOMA 2-%B - Homa 2', 'HOMA -2', '%', 'More Than 54.2'),
     t('homa2-sensitivity', 'HOMA 2-%S - Homa 2', 'HOMA -2', '%', ''),
   ], 'User-provided HOMA IR report'),
+  p('ttg-iga', 'Tissue transglutaminase antibody IgA (tTG - IgA)', 23, [
+    t('anti-ttg-iga', 'Anti Tissue Transglutaminase IgA', 'Category', 'U/mL', 'Negative: <20\nPositive: >20'),
+  ], 'User-provided tTG-IgA report'),
+  p('microalbuminuria', 'Microalbuminuria (Alb/Creat Ratio)', 24, [
+    t('urine-creatinine', 'Creatinine in urine', 'Microalbuminuria (Alb/Creat Ratio)', 'g/dL', ''),
+    t('urine-albumin', 'Albumin in urine', 'Microalbuminuria (Alb/Creat Ratio)', 'mg/dL', ''),
+    t('albumin-creatinine-ratio', 'Alb/Creat ratio', 'Microalbuminuria (Alb/Creat Ratio)', 'mg/g urine creatinine', 'Normal: <30 mg/g urine creatinine\nMicroalbuminuria: 30 - 300 mg/g urine creatinine\nClinical Albuminuria: >300 mg/g urine creatinine'),
+  ], 'User-provided Microalbuminuria report'),
 ];

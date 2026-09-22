@@ -52,6 +52,6 @@ export interface StaffFilterOptions {
   status: UserStatus | 'ALL';
   sortBy: 'name' | 'staffId' | 'department' | 'joinDate' | 'status';
   sortOrder: 'asc' | 'desc';
-  page: number;
-  pageSize: number;
+  page?: number;
+  pageSize?: number;
 }
