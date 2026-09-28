@@ -25,8 +25,15 @@ export interface AnalyticType {
   schemaVersion?: number;
   generalComment?: string;
   sourcePage?: number;
+  chartEnabled?: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface AnalyticResultChart {
+  url: string;
+  storagePath: string;
+  fileName: string;
 }
 
 export type AnalyticTypeFormData = Omit<AnalyticType, 'id' | 'createdAt' | 'updatedAt'>;
@@ -43,6 +50,7 @@ export interface AnalyticResult {
   schemaVersion?: number;
   notes?: string;
   generalComment?: string;
+  chartImage?: AnalyticResultChart | null;
   createdAt?: string;
 }
 

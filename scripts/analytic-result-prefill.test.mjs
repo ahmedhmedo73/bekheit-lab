@@ -37,3 +37,12 @@ test('relative and absolute values are restored independently', () => {
   assert.equal(entry.children[0].result, '');
   assert.equal(entry.children[0].absoluteResult, '5710');
 });
+
+test('chart-enabled results restore the saved analyzer chart', () => {
+  const type = { id: 'electrophoresis', name: 'Hemoglobin Electrophoresis', price: 0, chartEnabled: true, children: [{ id: 'a1', name: 'Hb A1', unit: '%', referenceRange: '' }] };
+  const chartImage = { url: 'https://example.test/chart.png', storagePath: 'charts/result', fileName: 'chart.png' };
+  const saved = [{ id: 'result', visitId: 'visit-1', analyticTypeId: 'electrophoresis', createdAt: '2026-09-28', chartImage, children: [{ id: 'a1', name: 'Hb A1', result: '97.6' }] }];
+  const [entry] = prefillAnalyticResults([type], saved, 'visit-1');
+  assert.equal(entry.chartEnabled, true);
+  assert.deepEqual(entry.chartImage, chartImage);
+});

@@ -1,4 +1,4 @@
-import type { AnalyticResult, AnalyticType, ChildAnalyticResult } from '../types/analyticType';
+import type { AnalyticResult, AnalyticResultChart, AnalyticType, ChildAnalyticResult } from '../types/analyticType';
 import { analyticChildren, resultMigration } from './analyticSchema.ts';
 import { emptyAnalyticResult } from './analyticValues.ts';
 
@@ -10,6 +10,10 @@ export interface AnalyticResultEntry {
   children: ChildAnalyticResult[];
   notes: string;
   generalComment: string;
+  chartEnabled: boolean;
+  chartImage: AnalyticResultChart | null;
+  chartFile?: File;
+  chartPreviewUrl?: string;
 }
 
 export function prefillAnalyticResults(
@@ -45,6 +49,8 @@ export function prefillAnalyticResults(
       }),
       notes: saved?.notes ?? '',
       generalComment: saved?.generalComment ?? type.generalComment ?? '',
+      chartEnabled: Boolean(type.chartEnabled),
+      chartImage: saved?.chartImage ?? null,
     };
   });
 }

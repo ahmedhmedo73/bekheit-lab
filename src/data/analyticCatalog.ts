@@ -84,6 +84,10 @@ export const ANALYTIC_CATALOG = [
     t('uric-acid', 'Uric Acid (Serum)', 'Kidney Functions', 'mg/dL', 'Male: 3 - 7; Female: 2.4 - 5.7'),
     t('calcium-total', 'Calcium Total (Serum)', 'Kidney Functions', 'mg/dL', '8.6 - 10.8'),
     t('calcium-ionized', 'Ca++', 'Kidney Functions', 'mg/dL', '4.2 - 5.2'),
+    { ...t('bun', 'BUN', 'Kidney Functions', 'mg/dL', '6.1 - 23.3'), referenceSource: 'User-provided Kidney Functions report, September 24' },
+    { ...t('phosphorus', 'Phosphorus (Serum)', 'Kidney Functions', 'mg/dL', '2.4 - 4.5'), referenceSource: 'User-provided Kidney Functions report, September 24' },
+    { ...t('sodium', 'Sodium (Na) (Serum)', 'Kidney Functions', 'mmol/L', '135 - 150'), referenceSource: 'User-provided Kidney Functions report, September 24' },
+    { ...t('potassium', 'Potassium (K) Serum', 'Kidney Functions', 'mmol/L', '3.5 - 5.5'), referenceSource: 'User-provided Kidney Functions report, September 24' },
   ]),
   p('lipids-profile', 'Lipids Profile', 9, [
     t('total-cholesterol', 'Total Cholesterol (Serum)', 'Lipids Profile', 'mg/dL', 'NORMAL: UP TO 200\nBORDERLINE: 200 - 240\nHIGH: >240'),
@@ -148,6 +152,12 @@ export const ANALYTIC_CATALOG = [
     t('vitamin-d-25', 'Vitamin D (25 hydroxycolecalciferol)', 'Category', 'ng/ml', 'Severe Deficiency: <10\nModerate Deficiency: 10 - 29\nRecommended Value: 30 - 100\nToxic: >150'),
   ], 'User-provided Vitamin D report'),
   p('liver-functions', 'Liver Functions Report', 17, [
+    t('total-bilirubin', 'Total Bilirubin', 'Liver Functions', 'mg/dL', '0.1 - 1.1'),
+    t('direct-bilirubin', 'Direct Bilirubin', 'Liver Functions', 'mg/dL', '0 - 0.3'),
+    t('indirect-bilirubin', 'Indirect Bilirubin', 'Liver Functions', 'mg/dL', '0 - 0.8'),
+    t('total-protein', 'Total Protein (Serum)', 'Liver Functions', 'g/dL', '6.2 - 8.3'),
+    t('albumin', 'Albumin (Serum)', 'Liver Functions', 'g/dL', '3.5 - 5.5'),
+    t('globulin', 'Globulin in Serum', 'Liver Functions', 'g/dL', '2.2 - 3.5'),
     t('sgot-ast', 'SGOT (AST) (Serum)', 'Liver Functions', 'U/L', '0 - 31'),
     t('sgpt-alt', 'SGPT (ALT) (Serum)', 'Liver Functions', 'U/L', '0 - 34'),
     t('alkaline-phosphatase', 'Alkaline Phosphatase (ALP) (Serum)', 'Liver Functions', 'U/L', '30 - 120'),
@@ -187,4 +197,14 @@ export const ANALYTIC_CATALOG = [
     t('urine-albumin', 'Albumin in urine', 'Microalbuminuria (Alb/Creat Ratio)', 'mg/dL', ''),
     t('albumin-creatinine-ratio', 'Alb/Creat ratio', 'Microalbuminuria (Alb/Creat Ratio)', 'mg/g urine creatinine', 'Normal: <30 mg/g urine creatinine\nMicroalbuminuria: 30 - 300 mg/g urine creatinine\nClinical Albuminuria: >300 mg/g urine creatinine'),
   ], 'User-provided Microalbuminuria report'),
+  p('quantitative-b-hcg', 'Quantitative B-HCG', 25, [
+    t('bhcg-quantitative', 'BHCG (Quantitative)', 'Category', 'mIU/ml', 'Non Pregnant: Less than 5\nPregnant 1 W: 5 - 50\nPregnant 2 W: 20 - 500\nPregnant 3 W: 100 - 5,000\nPregnant 4 W: 400 - 19,000\nPregnant 5 W: 800 - 29,300\nPregnant 6 W: 3,660 - 108,000\nPregnant 7 W: 10,900 - 148,000\nPregnant 8 W: 30,700 - 184,000\nPregnant 9 W: 67,200 - 169,000\nPregnant 10 W: 30,000 - 167,000\nPregnant 14 W: 15,000 - 92,100\nPregnant 15 - 26 W: 5,000 - 80,000\nPregnant 27 - 40 W: 3,000 - 15,000'),
+  ], 'User-provided Quantitative B-HCG report'),
+  {
+    ...p('hemoglobin-electrophoresis', 'Hemoglobin Electrophoresis', 26, [
+      t('hemoglobin-a1', 'Hemoglobin A1', 'Hemoglobin Fractions', '%', '94.7 - 98'),
+      t('hemoglobin-a2', 'Hemoglobin A2', 'Hemoglobin Fractions', '%', '2 - 3.3'),
+    ], 'User-provided Hemoglobin Electrophoresis report'),
+    chartEnabled: true,
+  },
 ];

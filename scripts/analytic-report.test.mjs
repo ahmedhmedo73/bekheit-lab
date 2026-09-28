@@ -67,6 +67,17 @@ test('report renders sections, paired differential columns, and escaped group co
   for (const text of ['CBC', 'Relative Count', 'Absolute Count', '5710', '2000 - 7000', 'General Comment:', 'Review &lt;finding&gt;\nSecond line']) assert.ok(html.includes(text));
 });
 
+test('report prints an escaped analyzer chart below its result table', () => {
+  const html = buildAnalyticReport(patient, [{ ...current, chartImage: {
+    url: 'https://example.test/chart.png?patient=1&visit=2',
+    storagePath: 'charts/result',
+    fileName: 'Hb <chart>.png',
+  } }]);
+  assert.ok(html.includes('class="result-chart"'));
+  assert.ok(html.includes('chart.png?patient=1&amp;visit=2'));
+  assert.ok(html.includes('Hb &lt;chart&gt;.png'));
+});
+
 test('print omits blank children from current and previous results', () => {
   const withOptionalChildren = { ...current, children: [
     { id: 'filled', name: 'Measured Urea', result: '46.4', unit: 'mg/dL', referenceRange: '13 - 50' },

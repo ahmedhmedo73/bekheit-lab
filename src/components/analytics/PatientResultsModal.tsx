@@ -207,6 +207,10 @@ export const PatientResultsModal: React.FC<PatientResultsModalProps> = ({
                         <tr key={child.id}><td data-label="Child Analytic"><small>{child.section}</small><div>{child.name}</div></td><td data-label="Value" style={{ whiteSpace: 'pre-wrap' }}>{child.resultType === 'differential' ? 'Relative: ' : ''}{flaggedResult(child.result, child.referenceRange, patient.gender)}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {flaggedResult(child.absoluteResult, child.absoluteReferenceRange, patient.gender)}</div>}</td><td data-label="Unit">{child.unit || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteUnit || 'Not specified'}</div>}</td><td data-label="Reference Range" style={{ whiteSpace: 'pre-wrap' }}>{child.referenceRange || 'Not specified'}{child.resultType === 'differential' && child.absoluteEnabled && <div>Absolute: {child.absoluteReferenceRange || 'Not specified'}</div>}</td></tr>
                       ))}</tbody>
                     </table>
+                    {r.chartImage?.url && <figure className="patient-result-chart">
+                      <img src={r.chartImage.url} alt={`${r.analyticTypeName} chart`} />
+                      <figcaption>{r.chartImage.fileName || 'Analyzer chart'}</figcaption>
+                    </figure>}
                   </td>
                   <td data-label="Notes">
                     {r.generalComment && <p style={{ whiteSpace: 'pre-wrap' }}><strong>General Comment:</strong> {r.generalComment}</p>}

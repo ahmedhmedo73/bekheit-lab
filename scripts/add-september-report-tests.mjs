@@ -12,12 +12,29 @@ const additions = new Map([
   ['pdf-hormones', ['anti-tg', 'anti-tpo']],
   ['ttg-iga', ['anti-ttg-iga']],
   ['microalbuminuria', ['urine-creatinine', 'urine-albumin', 'albumin-creatinine-ratio']],
+  ['pdf-kidney-functions', ['bun', 'phosphorus', 'sodium', 'potassium']],
+  ['liver-functions', ['total-bilirubin', 'direct-bilirubin', 'indirect-bilirubin', 'total-protein', 'albumin', 'globulin']],
+  ['quantitative-b-hcg', ['bhcg-quantitative']],
+  ['hemoglobin-electrophoresis', ['hemoglobin-a1', 'hemoglobin-a2']],
 ]);
 const aliases = {
   'amyloid-a': ['Serum Amyloid A', 'Amyloid A Protein'],
   'anti-tg': ['Anti-TG', 'Anti Thyroglobulin Ab'],
   'anti-tpo': ['Anti-TPO', 'Thyroid Peroxidase Antibodies'],
   'anti-ttg-iga': ['tTG IgA', 'Anti Tissue Transglutaminase IgA'],
+  'bun': ['Blood Urea Nitrogen'],
+  'phosphorus': ['Phosphorus', 'Serum Phosphorus'],
+  'sodium': ['Sodium', 'Sodium (Na) Serum'],
+  'potassium': ['Potassium', 'Potassium (K) (Serum)'],
+  'total-bilirubin': ['Bilirubin Total'],
+  'direct-bilirubin': ['Bilirubin Direct'],
+  'indirect-bilirubin': ['Bilirubin Indirect'],
+  'total-protein': ['Total Protein', 'Serum Total Protein'],
+  'albumin': ['Albumin', 'Serum Albumin'],
+  'globulin': ['Globulin', 'Globulin (Serum)'],
+  'bhcg-quantitative': ['Beta HCG (Quantitative)', 'Quantitative B-HCG'],
+  'hemoglobin-a1': ['Hb A1', 'HbA1'],
+  'hemoglobin-a2': ['Hb A2', 'HbA2'],
 };
 function merge(existing, incoming) {
   const children = [...(existing ?? [])];

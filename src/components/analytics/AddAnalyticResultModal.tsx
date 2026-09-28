@@ -8,6 +8,7 @@ import { Modal } from '../common/Modal';
 import { AnalyticValueInput } from './AnalyticValueInput';
 import { hasAnalyticResultValue } from '../../services/analyticValues';
 import { calculateAutomaticAnalyticValues, isAutomaticAnalyticCalculatedField, isAutomaticAnalyticSourceField } from '../../services/automaticAnalyticCalculations';
+import { uploadAnalyticChart, validateAnalyticChart } from '../../services/analyticChartService';
 import { Button } from '../common/Button';
 import { Icons } from '../common/Icons';
 import './AddAnalyticResultModal.css';
@@ -70,6 +71,28 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
     );
   };
 
+  const selectChart = (idx: number, file?: File) => {
+    if (!file) return;
+    const validationError = validateAnalyticChart(file);
+    if (validationError) {
+      toastError('Invalid Chart Image', validationError);
+      return;
+    }
+    setEntries(previous => previous.map((entry, entryIndex) => {
+      if (entryIndex !== idx) return entry;
+      if (entry.chartPreviewUrl) URL.revokeObjectURL(entry.chartPreviewUrl);
+      return { ...entry, chartFile: file, chartPreviewUrl: URL.createObjectURL(file) };
+    }));
+  };
+
+  const removeChart = (idx: number) => {
+    setEntries(previous => previous.map((entry, entryIndex) => {
+      if (entryIndex !== idx) return entry;
+      if (entry.chartPreviewUrl) URL.revokeObjectURL(entry.chartPreviewUrl);
+      return { ...entry, chartFile: undefined, chartPreviewUrl: undefined, chartImage: null };
+    }));
+  };
+
   const handleSubmit = async () => {
     if (saving || loadingResults || loadError) return;
     if (!patient) return;
@@ -80,7 +103,10 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
 
     setSaving(true);
     try {
-      const results = entries.map(entry => {
+      const results = await Promise.all(entries.map(async entry => {
+        const chartImage = entry.chartFile
+          ? await uploadAnalyticChart(entry.chartFile, patient.id, visitId ?? 'unassigned', entry.analyticTypeId)
+          : entry.chartImage;
         const data: AnalyticResultFormData = {
           patientId: patient.id,
           visitId,
@@ -92,9 +118,10 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
           schemaVersion: 2,
           notes: entry.notes?.trim() || '',
           generalComment: entry.generalComment.trim(),
+          ...(entry.chartEnabled ? { chartImage: chartImage ?? null } : {}),
         };
         return data;
-      });
+      }));
       await AnalyticResultService.saveMany(results);
       success(
         'Results Saved',
@@ -217,6 +244,18 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
                         placeholder="Optional report comment" value={entry.generalComment}
                         onChange={event => updateEntry(idx, 'generalComment', event.target.value)} />
                     </div>
+                    {entry.chartEnabled && <div className="result-chart-editor">
+                      <div>
+                        <label className="form-label" htmlFor={`chart-${entry.analyticTypeId}`}>Electrophoresis chart</label>
+                        <p className="text-xs text-muted">Add the analyzer chart as a PNG, JPG, or WebP image. Maximum size: 8 MB.</p>
+                      </div>
+                      <input id={`chart-${entry.analyticTypeId}`} className="form-input" type="file" accept="image/png,image/jpeg,image/webp" disabled={saving}
+                        onChange={event => { selectChart(idx, event.target.files?.[0]); event.currentTarget.value = ''; }} />
+                      {(entry.chartPreviewUrl || entry.chartImage?.url) && <div className="result-chart-preview">
+                        <img src={entry.chartPreviewUrl || entry.chartImage?.url} alt={`${entry.analyticTypeName} chart preview`} />
+                        <Button type="button" size="sm" variant="outline" disabled={saving} onClick={() => removeChart(idx)}>Remove chart</Button>
+                      </div>}
+                    </div>}
                   </div>}
                 </div>
                 );

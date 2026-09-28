@@ -75,6 +75,9 @@ export function buildAnalyticReport(patient: Patient, results: AnalyticResult[],
   .results .separator { text-align: center; }
   .results .range { font-size: 10pt; line-height: 1.3; }
   .results { margin-bottom: 4mm; }
+  .result-chart { margin: 5mm auto 2mm; text-align: center; break-inside: avoid; }
+  .result-chart img { display: block; width: auto; max-width: 145mm; max-height: 105mm; margin: 0 auto; object-fit: contain; }
+  .result-chart figcaption { margin-top: 1.5mm; font-family: Arial, sans-serif; font-size: 8pt; color: #444; }
   .results th { padding-bottom: 2mm; }
   .results .section-heading th { padding-top: 2mm; text-decoration: underline; font-size: 11pt; }
   .differential { border-top: 0.7pt solid #000; }
@@ -105,6 +108,7 @@ ${panels.map(result => {
     </tbody></table>
     <h2 class="panel-title">${escapeHtml(result.analyticTypeName)}</h2>
     ${renderResultTables(children, result.analyticTypeName, patient.gender)}
+    ${result.chartImage?.url ? `<figure class="result-chart"><img src="${escapeHtml(result.chartImage.url)}" alt="${escapeHtml(result.analyticTypeName)} chart"><figcaption>${escapeHtml(result.chartImage.fileName || 'Analyzer chart')}</figcaption></figure>` : ''}
     ${result.generalComment ? `<p class="notes"><strong>General Comment:</strong> ${escapeHtml(result.generalComment)}</p>` : ''}
     ${result.notes ? `<p class="notes"><strong>Notes:</strong> ${escapeHtml(result.notes)}</p>` : ''}
     ${previous.length ? `<h3 class="previous-title">Previous Test Results</h3><table class="previous-results" aria-label="Previous results for ${escapeHtml(result.analyticTypeName)}"><colgroup><col style="width:45%"><col style="width:27%"><col style="width:28%"></colgroup><thead><tr><th>Test</th><th>Result</th><th>Result Date</th></tr></thead><tbody>${previous.flatMap(item => (item.children?.length ? item.children : [{ id: 'legacy', name: item.analyticTypeName, result: item.result, unit: '', referenceRange: '' }]).filter(hasAnalyticResultValue).map(child => `<tr><td>${escapeHtml(child.name)}</td><td>${escapeHtml(child.result)}${child.unit ? ` ${escapeHtml(child.unit)}` : ''}${child.resultType === 'differential' && child.absoluteEnabled && child.absoluteResult ? `<br>Absolute: ${escapeHtml(child.absoluteResult)} ${escapeHtml(child.absoluteUnit || '')}` : ''}</td><td>${escapeHtml(formatDate(item.createdAt))}</td></tr>`)).join('')}</tbody></table>` : ''}

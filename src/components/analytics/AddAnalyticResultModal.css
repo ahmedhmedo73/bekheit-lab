@@ -25,6 +25,10 @@
 .result-value-reference { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin: .35rem 0 0; color: var(--text-muted); font-size: .75rem; white-space: pre-wrap; }
 .result-entry-comment { padding-top: 1rem; }
 .result-entry-comment textarea { display: block; width: 100%; resize: vertical; }
+.result-chart-editor { display: grid; gap: .75rem; margin-top: 1rem; padding: 1rem; border: 1px dashed var(--border-strong); border-radius: .75rem; background: #f8fafc; }
+.result-chart-editor .form-label { margin-bottom: .2rem; }
+.result-chart-preview { display: flex; align-items: flex-start; gap: 1rem; }
+.result-chart-preview img { width: min(100%, 560px); max-height: 320px; object-fit: contain; border: 1px solid var(--border-subtle); border-radius: .5rem; background: #fff; }
 .result-modal-footer { align-items: center; flex-wrap: wrap; }
 .result-modal-footer-summary { display: flex; flex-direction: column; margin-right: auto; color: var(--text-main); font-size: .8125rem; }
 .result-modal-footer-summary span { color: var(--text-muted); font-size: .75rem; }
@@ -32,4 +36,5 @@
   .result-modal-footer-summary { flex-basis: 100%; }
   .result-modal-footer .btn { flex: 1; }
   .result-entry-header { align-items: flex-start; }
+  .result-chart-preview { flex-direction: column; }
 }
