@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { prefillAnalyticResults } from '../src/services/analyticResultPrefill.ts';
+import { validateAnalyticChart } from '../src/services/analyticChartService.ts';
 
 const assigned = [
   { id: 'kidney', name: 'Kidney Functions', price: 120, generalComment: 'Catalog comment', children: [
@@ -45,4 +46,10 @@ test('chart-enabled results restore the saved analyzer chart', () => {
   const [entry] = prefillAnalyticResults([type], saved, 'visit-1');
   assert.equal(entry.chartEnabled, true);
   assert.deepEqual(entry.chartImage, chartImage);
+});
+
+test('chart attachments accept supported images within the source limit', () => {
+  assert.equal(validateAnalyticChart({ type: 'image/png', size: 1024 }), null);
+  assert.match(validateAnalyticChart({ type: 'application/pdf', size: 1024 }), /PNG, JPG, or WebP/);
+  assert.match(validateAnalyticChart({ type: 'image/jpeg', size: 8 * 1024 * 1024 + 1 }), /8 MB or smaller/);
 });

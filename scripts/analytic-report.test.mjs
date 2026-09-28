@@ -78,6 +78,16 @@ test('report prints an escaped analyzer chart below its result table', () => {
   assert.ok(html.includes('Hb &lt;chart&gt;.png'));
 });
 
+test('white report keeps an inline Firestore chart image', () => {
+  const dataUrl = 'data:image/webp;base64,UklGRg==';
+  const html = buildAnalyticReport(patient, [{ ...current, chartImage: {
+    url: dataUrl,
+    storagePath: 'firestore-inline',
+    fileName: 'electrophoresis.webp',
+  } }], { watermark: false });
+  assert.ok(html.includes(`src="${dataUrl}"`));
+});
+
 test('print omits blank children from current and previous results', () => {
   const withOptionalChildren = { ...current, children: [
     { id: 'filled', name: 'Measured Urea', result: '46.4', unit: 'mg/dL', referenceRange: '13 - 50' },

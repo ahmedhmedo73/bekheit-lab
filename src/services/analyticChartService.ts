@@ -1,36 +1,74 @@
-import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
-import { app } from '../config/firebase';
 import type { AnalyticResultChart } from '../types/analyticType';
 
-const MAX_CHART_BYTES = 8 * 1024 * 1024;
+const MAX_SOURCE_BYTES = 8 * 1024 * 1024;
+const MAX_STORED_BYTES = 450 * 1024;
+const MAX_DIMENSION = 1400;
 
-function safeSegment(value: string): string {
-  return value.replace(/[^a-zA-Z0-9_-]/g, '_');
+function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('The selected chart image could not be read.'));
+    };
+    image.src = objectUrl;
+  });
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (blob) resolve(blob);
+      else reject(new Error('The selected chart image could not be processed.'));
+    }, 'image/webp', quality);
+  });
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('The processed chart image could not be saved.'));
+    reader.readAsDataURL(blob);
+  });
 }
 
 export function validateAnalyticChart(file: File): string | null {
   if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) return 'Choose a PNG, JPG, or WebP chart image.';
-  if (file.size > MAX_CHART_BYTES) return 'Chart image must be 8 MB or smaller.';
+  if (file.size > MAX_SOURCE_BYTES) return 'Chart image must be 8 MB or smaller.';
   return null;
 }
 
-export async function uploadAnalyticChart(
-  file: File,
-  patientId: string,
-  visitId: string,
-  analyticTypeId: string,
-): Promise<AnalyticResultChart> {
+export async function prepareAnalyticChart(file: File): Promise<AnalyticResultChart> {
   const validationError = validateAnalyticChart(file);
   if (validationError) throw new Error(validationError);
-  if (!app) throw new Error('Firebase is not initialized.');
 
-  const storagePath = [
-    'analytic-result-charts',
-    safeSegment(patientId),
-    safeSegment(visitId),
-    `${safeSegment(analyticTypeId)}-chart`,
-  ].join('/');
-  const chartRef = ref(getStorage(app), storagePath);
-  await uploadBytes(chartRef, file, { contentType: file.type, customMetadata: { originalName: file.name } });
-  return { url: await getDownloadURL(chartRef), storagePath, fileName: file.name };
+  const image = await loadImage(file);
+  const largestSide = Math.max(image.naturalWidth, image.naturalHeight);
+  let scale = Math.min(1, MAX_DIMENSION / largestSide);
+
+  for (let attempt = 0; attempt < 7; attempt += 1) {
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Chart image processing is not supported by this browser.');
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await canvasToBlob(canvas, Math.max(0.5, 0.86 - attempt * 0.06));
+    if (blob.size <= MAX_STORED_BYTES) {
+      return {
+        url: await blobToDataUrl(blob),
+        storagePath: 'firestore-inline',
+        fileName: file.name,
+      };
+    }
+    scale *= 0.82;
+  }
+
+  throw new Error('The chart image is too detailed to save. Choose a smaller image.');
 }

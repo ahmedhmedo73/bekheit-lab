@@ -8,7 +8,7 @@ import { Modal } from '../common/Modal';
 import { AnalyticValueInput } from './AnalyticValueInput';
 import { hasAnalyticResultValue } from '../../services/analyticValues';
 import { calculateAutomaticAnalyticValues, isAutomaticAnalyticCalculatedField, isAutomaticAnalyticSourceField } from '../../services/automaticAnalyticCalculations';
-import { uploadAnalyticChart, validateAnalyticChart } from '../../services/analyticChartService';
+import { prepareAnalyticChart, validateAnalyticChart } from '../../services/analyticChartService';
 import { Button } from '../common/Button';
 import { Icons } from '../common/Icons';
 import './AddAnalyticResultModal.css';
@@ -100,12 +100,18 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
       toastError('No Tests Assigned', 'Assign analytic types before recording results.');
       return;
     }
+    const missingChart = entries.find(entry => entry.chartEnabled && !entry.chartFile && !entry.chartImage?.url);
+    if (missingChart) {
+      setExpandedEntryIds(previous => new Set(previous).add(missingChart.analyticTypeId));
+      toastError('Chart Required', `Add the analyzer chart for ${missingChart.analyticTypeName} before saving.`);
+      return;
+    }
 
     setSaving(true);
     try {
       const results = await Promise.all(entries.map(async entry => {
         const chartImage = entry.chartFile
-          ? await uploadAnalyticChart(entry.chartFile, patient.id, visitId ?? 'unassigned', entry.analyticTypeId)
+          ? await prepareAnalyticChart(entry.chartFile)
           : entry.chartImage;
         const data: AnalyticResultFormData = {
           patientId: patient.id,
@@ -246,8 +252,8 @@ export const AddAnalyticResultModal: React.FC<AddAnalyticResultModalProps> = ({
                     </div>
                     {entry.chartEnabled && <div className="result-chart-editor">
                       <div>
-                        <label className="form-label" htmlFor={`chart-${entry.analyticTypeId}`}>Electrophoresis chart</label>
-                        <p className="text-xs text-muted">Add the analyzer chart as a PNG, JPG, or WebP image. Maximum size: 8 MB.</p>
+                        <label className="form-label" htmlFor={`chart-${entry.analyticTypeId}`}>Electrophoresis chart <span aria-hidden="true">*</span></label>
+                        <p className="text-xs text-muted">Required. Add the analyzer chart as a PNG, JPG, or WebP image. Maximum size: 8 MB.</p>
                       </div>
                       <input id={`chart-${entry.analyticTypeId}`} className="form-input" type="file" accept="image/png,image/jpeg,image/webp" disabled={saving}
                         onChange={event => { selectChart(idx, event.target.files?.[0]); event.currentTarget.value = ''; }} />
